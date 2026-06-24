@@ -84,17 +84,41 @@ ALTER TABLE public.profiles ENABLE ROW LEVEL SECURITY;
 --------------------------------------------------
 CREATE OR REPLACE FUNCTION public.handle_new_user()
 RETURNS TRIGGER AS $$
+DECLARE
+  meta_full_name TEXT;
+  meta_role TEXT;
+  meta_dept TEXT;
+  meta_mfa BOOLEAN;
 BEGIN
+  -- Safely extract metadata with both snake_case and camelCase fallback
+  IF new.raw_user_meta_data IS NOT NULL THEN
+    meta_full_name := COALESCE(new.raw_user_meta_data->>'full_name', new.raw_user_meta_data->>'fullName');
+    meta_role := COALESCE(new.raw_user_meta_data->>'role', 'User');
+    meta_dept := COALESCE(new.raw_user_meta_data->>'department_id', new.raw_user_meta_data->>'departmentId');
+    meta_mfa := COALESCE((new.raw_user_meta_data->>'mfa_enabled')::boolean, (new.raw_user_meta_data->>'mfaEnabled')::boolean, FALSE);
+  ELSE
+    meta_full_name := NULL;
+    meta_role := 'User';
+    meta_dept := 'dep-eng';
+    meta_mfa := FALSE;
+  END IF;
+
   INSERT INTO public.profiles (id, full_name, email, role, department_id, status, mfa_enabled)
   VALUES (
     new.id,
-    COALESCE(new.raw_user_meta_data->>'full_name', split_part(new.email, '@', 1)),
+    COALESCE(meta_full_name, split_part(new.email, '@', 1)),
     new.email,
-    COALESCE(new.raw_user_meta_data->>'role', 'User'),
-    COALESCE(new.raw_user_meta_data->>'department_id', 'dep-eng'),
+    COALESCE(meta_role, 'User'),
+    COALESCE(meta_dept, 'dep-eng'),
     'Active',
-    COALESCE((new.raw_user_meta_data->>'mfa_enabled')::boolean, FALSE)
-  );
+    COALESCE(meta_mfa, FALSE)
+  )
+  ON CONFLICT (id) DO UPDATE SET
+    full_name = COALESCE(EXCLUDED.full_name, profiles.full_name),
+    email = COALESCE(EXCLUDED.email, profiles.email),
+    role = COALESCE(EXCLUDED.role, profiles.role),
+    department_id = COALESCE(EXCLUDED.department_id, profiles.department_id);
+    
   RETURN NEW;
 END;
 $$ LANGUAGE plpgsql SECURITY DEFINER;
@@ -162,7 +186,7 @@ WITH CHECK (public.is_admin());
 --------------------------------------------------
 CREATE TABLE IF NOT EXISTS public.access_requests (
   id TEXT PRIMARY KEY DEFAULT 'req-' || gen_random_uuid()::text,
-  user_id UUID REFERENCES public.profiles(id) ON DELETE CASCADE,
+  user_id UUID REFERENCES auth.users(id) ON DELETE CASCADE,
   user_email TEXT NOT NULL,
   user_full_name TEXT NOT NULL,
   department_id TEXT REFERENCES public.departments(id) ON DELETE SET NULL,
@@ -195,7 +219,11 @@ ON public.access_requests FOR SELECT
 TO authenticated
 USING (
   auth.uid() = user_id
-  OR (public.is_manager() AND department_id = (SELECT department_id FROM public.profiles WHERE id = auth.uid()))
+  OR (public.is_manager() AND (
+    department_id = (SELECT department_id FROM public.profiles WHERE id = auth.uid())
+    OR
+    COALESCE(department_id, (SELECT department_id FROM public.profiles WHERE id = user_id)) = (SELECT department_id FROM public.profiles WHERE id = auth.uid())
+  ))
   OR public.is_admin()
 );
 
@@ -209,7 +237,11 @@ ON public.access_requests FOR UPDATE
 TO authenticated
 USING (
   auth.uid() = user_id
-  OR (public.is_manager() AND department_id = (SELECT department_id FROM public.profiles WHERE id = auth.uid()))
+  OR (public.is_manager() AND (
+    department_id = (SELECT department_id FROM public.profiles WHERE id = auth.uid())
+    OR
+    COALESCE(department_id, (SELECT department_id FROM public.profiles WHERE id = user_id)) = (SELECT department_id FROM public.profiles WHERE id = auth.uid())
+  ))
   OR public.is_admin()
 );
 

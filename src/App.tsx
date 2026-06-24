@@ -211,7 +211,7 @@ export default function App() {
           return;
         }
         
-        if (data && data.length > 0) {
+        if (data) {
           // Map snake_case columns back to camelCase models
           const mappedProfiles: UserProfile[] = data.map(item => ({
             id: item.id,
@@ -261,7 +261,7 @@ export default function App() {
           return;
         }
         
-        if (data && data.length > 0) {
+        if (data) {
           // Map snake_case columns back to camelCase models
           const mappedRequests: AccessRequest[] = data.map(item => ({
             id: item.id,
@@ -285,6 +285,8 @@ export default function App() {
           }));
           
           setRequests(mappedRequests);
+        } else {
+          setRequests([]);
         }
       } catch (err) {
         console.error("Failed to load requests from DB:", err);
@@ -293,6 +295,66 @@ export default function App() {
     
     fetchRequestsFromDB();
   }, [currentUser]);
+
+  // Automatically heal/sync profiles for users who have submitted requests but are missing from public.profiles
+  useEffect(() => {
+    if (requests.length > 0 && profiles.length > 0) {
+      const missingProfiles = requests.filter(req => 
+        req.userEmail && !profiles.some(p => p.email.toLowerCase().trim() === req.userEmail.toLowerCase().trim())
+      );
+      
+      if (missingProfiles.length > 0) {
+        const uniqueEmails = Array.from(new Set(missingProfiles.map(r => r.userEmail.toLowerCase().trim()))) as string[];
+        const newProfilesToAdd: UserProfile[] = [];
+        
+        uniqueEmails.forEach((email: string) => {
+          const req = missingProfiles.find(r => r.userEmail.toLowerCase().trim() === email)!;
+          const newProfile: UserProfile = {
+            id: req.userId || 'user-' + Math.random().toString(36).substr(2, 9),
+            fullName: req.userFullName || email.split('@')[0].split('.').map(w => w.charAt(0).toUpperCase() + w.slice(1)).join(' '),
+            email: email,
+            role: 'User',
+            departmentId: req.departmentId || 'dep-eng',
+            status: 'Active',
+            createdAt: req.createdAt || new Date().toISOString()
+          };
+          newProfilesToAdd.push(newProfile);
+        });
+        
+        setProfiles(prev => {
+          const updated = [...prev];
+          newProfilesToAdd.forEach(newP => {
+            if (!updated.some(p => p.email.toLowerCase().trim() === newP.email)) {
+              updated.push(newP);
+              
+              // Background heal: write profile to Supabase database so all sessions see it immediately!
+              const isUUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(newP.id);
+              if (isUUID) {
+                supabase
+                  .from('profiles')
+                  .upsert({
+                    id: newP.id,
+                    full_name: newP.fullName,
+                    email: newP.email,
+                    role: 'User',
+                    department_id: newP.departmentId,
+                    status: 'Active'
+                  })
+                  .then(({ error }) => {
+                    if (error) {
+                      console.error("Failed to auto-heal missing database profile:", error);
+                    } else {
+                      console.log("Successfully auto-healed missing database profile for", newP.email);
+                    }
+                  });
+              }
+            }
+          });
+          return updated;
+        });
+      }
+    }
+  }, [requests, profiles]);
 
   // Handle active session loading
   useEffect(() => {
@@ -310,18 +372,42 @@ export default function App() {
         }
         setCurrentUser(foundProfile);
       } else {
-        // Create an on-the-fly roster entry for new Supabase signups
-        const newProfile: UserProfile = {
-          id: 'user-' + Math.random().toString(36).substr(2, 9),
-          fullName: trimKey.split('@')[0].split('.').map(w => w.charAt(0).toUpperCase() + w.slice(1)).join(' '),
-          email: trimKey,
-          role: 'User',
-          departmentId: 'dep-eng',
-          status: 'Active',
-          createdAt: new Date().toISOString()
+        // Fetch the actual user ID from Supabase Auth to ensure we use the correct UUID
+        const syncProfile = async () => {
+          try {
+            const { data: { user } } = await supabase.auth.getUser();
+            const actualId = user?.id || 'user-' + Math.random().toString(36).substr(2, 9);
+            const newProfile: UserProfile = {
+              id: actualId,
+              fullName: trimKey.split('@')[0].split('.').map(w => w.charAt(0).toUpperCase() + w.slice(1)).join(' '),
+              email: trimKey,
+              role: 'User',
+              departmentId: 'dep-eng',
+              status: 'Active',
+              createdAt: new Date().toISOString()
+            };
+            setProfiles(prev => {
+              if (prev.some(p => p.email.toLowerCase().trim() === trimKey)) return prev;
+              return [...prev, newProfile];
+            });
+            setCurrentUser(newProfile);
+            
+            // Upsert to Supabase profiles table to heal database missing records!
+            if (user?.id) {
+              await supabase.from('profiles').upsert({
+                id: user.id,
+                full_name: newProfile.fullName,
+                email: newProfile.email,
+                role: 'User',
+                department_id: 'dep-eng',
+                status: 'Active'
+              });
+            }
+          } catch (err) {
+            console.error("Failed to sync profile:", err);
+          }
         };
-        setProfiles(prev => [...prev, newProfile]);
-        setCurrentUser(newProfile);
+        syncProfile();
       }
     } else {
       setCurrentUser(null);
