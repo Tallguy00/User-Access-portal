@@ -1,0 +1,6 @@
+{
+  "name": "User Access Request Portal",
+  "description": "Centralize access requests, approvals, role assignments, and audit tracking for an organization, fully integrated with Supabase Auth.",
+  "requestFramePermissions": ["camera"],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
