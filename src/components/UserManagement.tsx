@@ -20,7 +20,7 @@ export default function UserManagement({
   onUpdateStatus,
   onCreateUser,
   onResetPassword,
-  currentUserRole = 'User'
+  currentUserRole = 'Employee (Requester)'
 }: UserManagementProps) {
   const [searchTerm, setSearchTerm] = useState('');
   const [roleFilter, setRoleFilter] = useState('All');
@@ -29,7 +29,7 @@ export default function UserManagement({
   const [showCreateForm, setShowCreateForm] = useState(false);
   const [newFullName, setNewFullName] = useState('');
   const [newEmail, setNewEmail] = useState('');
-  const [newRole, setNewRole] = useState<UserRole>('User');
+  const [newRole, setNewRole] = useState<UserRole>('Employee (Requester)');
   const [newDept, setNewDept] = useState('');
   const [successMsg, setSuccessMsg] = useState('');
 
@@ -42,10 +42,12 @@ export default function UserManagement({
 
   const getRoleColorBadge = (role: UserRole) => {
     switch (role) {
-      case 'User': return 'bg-gray-100 text-gray-800 dark:bg-gray-800 dark:text-gray-300';
-      case 'Manager': return 'bg-blue-150 text-blue-850 dark:bg-blue-900/30 dark:text-blue-400 font-semibold';
-      case 'IT Admin': return 'bg-indigo-150 text-indigo-850 dark:bg-indigo-900/30 dark:text-indigo-400 font-bold';
+      case 'Employee (Requester)': return 'bg-gray-100 text-gray-800 dark:bg-gray-800 dark:text-gray-300';
+      case 'Manager (Approver)': return 'bg-blue-150 text-blue-850 dark:bg-blue-900/30 dark:text-blue-400 font-semibold';
+      case 'IT Support': return 'bg-indigo-150 text-indigo-850 dark:bg-indigo-900/30 dark:text-indigo-400 font-bold';
+      case 'Admin': return 'bg-amber-150 text-amber-850 dark:bg-amber-900/30 dark:text-amber-400 font-bold';
       case 'Super Admin': return 'bg-red-150 text-red-850 dark:bg-red-900/30 dark:text-red-400 font-extrabold border border-red-200/50';
+      default: return 'bg-gray-100 text-gray-800';
     }
   };
 
@@ -56,7 +58,7 @@ export default function UserManagement({
     onCreateUser({
       fullName: newFullName,
       email: newEmail,
-      role: currentUserRole === 'Super Admin' ? newRole : 'User',
+      role: currentUserRole === 'Super Admin' ? newRole : 'Employee (Requester)',
       departmentId: newDept,
       status: 'Active',
       mfaEnabled: true
@@ -65,7 +67,7 @@ export default function UserManagement({
     setSuccessMsg(`User ${newFullName} successfully added to database.`);
     setNewFullName('');
     setNewEmail('');
-    setNewRole('User');
+    setNewRole('Employee (Requester)');
     setNewDept('');
     setTimeout(() => {
       setSuccessMsg('');
@@ -138,16 +140,17 @@ export default function UserManagement({
                     onChange={(e) => setNewRole(e.target.value as UserRole)}
                     className="w-full px-3 py-2 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg text-xs"
                   >
-                    <option value="User">Employee / User</option>
-                    <option value="Manager">Manager / Sponsoring Approver</option>
-                    <option value="IT Admin">IT IAM Administrator</option>
-                    <option value="Super Admin">Super Administrator</option>
+                    <option value="Employee (Requester)">Employee (Requester)</option>
+                    <option value="Manager (Approver)">Manager (Approver)</option>
+                    <option value="IT Support">IT Support</option>
+                    <option value="Admin">Admin</option>
+                    <option value="Super Admin">Super Admin</option>
                   </select>
                 ) : (
                   <input
                     type="text"
                     disabled
-                    value="Employee / User (Adjustable by Super Admin)"
+                    value="Employee (Requester) (Adjustable by Super Admin)"
                     className="w-full px-3 py-2 bg-gray-50 dark:bg-gray-850 border border-gray-200 dark:border-gray-800 rounded-lg text-gray-500 font-semibold"
                   />
                 )}
@@ -213,9 +216,10 @@ export default function UserManagement({
               className="px-2 py-1.5 bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg text-xs text-gray-700 dark:text-gray-300 focus:outline-none"
             >
               <option value="All">All Roles</option>
-              <option value="User">User</option>
-              <option value="Manager">Manager</option>
-              <option value="IT Admin">IT Admin</option>
+              <option value="Employee (Requester)">Employee (Requester)</option>
+              <option value="Manager (Approver)">Manager (Approver)</option>
+              <option value="IT Support">IT Support</option>
+              <option value="Admin">Admin</option>
               <option value="Super Admin">Super Admin</option>
             </select>
           </div>
@@ -274,9 +278,10 @@ export default function UserManagement({
                           onChange={(e) => onUpdateRole(u.id, e.target.value as UserRole)}
                           className={`px-2.5 py-1 text-xs rounded-full cursor-pointer focus:outline-none focus:ring-1 focus:ring-blue-500 font-bold ${getRoleColorBadge(u.role)}`}
                         >
-                          <option value="User">User / Employee</option>
-                          <option value="Manager">Manager / Sponsoring Approver</option>
-                          <option value="IT Admin">IT IAM Admin</option>
+                          <option value="Employee (Requester)">Employee (Requester)</option>
+                          <option value="Manager (Approver)">Manager (Approver)</option>
+                          <option value="IT Support">IT Support</option>
+                          <option value="Admin">Admin</option>
                           <option value="Super Admin">Super Admin</option>
                         </select>
                       ) : (

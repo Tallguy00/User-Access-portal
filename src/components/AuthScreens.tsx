@@ -543,7 +543,7 @@ export function RegisterScreen({ onSuccess, onNavigate, departments, profiles }:
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
-  const [role, setRole] = useState<UserRole>('User');
+  const [role, setRole] = useState<UserRole>('Employee (Requester)');
   const [dept, setDept] = useState('');
   const [showSandboxRole, setShowSandboxRole] = useState(false);
   
@@ -801,7 +801,7 @@ export function RegisterScreen({ onSuccess, onNavigate, departments, profiles }:
           onSimulateSuccess={(email) => {
             onSuccess(email, {
               fullName: email.split('@')[0].split('.').map(w => w.charAt(0).toUpperCase() + w.slice(1)).join(' '),
-              role: email === 'super@company.com' ? 'Super Admin' : (email === 'admin@company.com' ? 'IT Admin' : (email === 'manager.bob@company.com' ? 'Manager' : 'User')),
+              role: email === 'super@company.com' ? 'Super Admin' : (email === 'admin@company.com' ? 'IT Support' : (email === 'manager.bob@company.com' ? 'Manager (Approver)' : 'Employee (Requester)')),
               departmentId: email === 'manager.bob@company.com' ? 'dep-fin' : 'dep-eng'
             });
           }}

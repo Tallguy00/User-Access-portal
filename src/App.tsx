@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { supabase } from './supabaseClient';
 import { 
   UserProfile, 
@@ -8,7 +8,9 @@ import {
   Department, 
   SystemApplication, 
   UserRole,
-  RequestStatus
+  RequestStatus,
+  mapUiToDbRole,
+  mapDbToUiRole
 } from './types';
 import { 
   INITIAL_DEPARTMENTS, 
@@ -21,6 +23,13 @@ import {
 // Pages & Components import
 import Header from './components/Header';
 import LandingPage from './components/LandingPage';
+
+const mapLegacyToNewRole = (legacyRole: string): UserRole => {
+  if (legacyRole === 'User') return 'Employee (Requester)';
+  if (legacyRole === 'Manager') return 'Manager (Approver)';
+  if (legacyRole === 'IT Admin') return 'IT Support';
+  return legacyRole as UserRole;
+};
 import { LoginScreen, RegisterScreen, ForgotPasswordScreen, ResetPasswordScreen, AuthLayout } from './components/AuthScreens';
 import UserDashboard from './components/UserDashboard';
 import ManagerDashboard from './components/ManagerDashboard';
@@ -51,16 +60,22 @@ export default function App() {
   // Main entity states synced with local Storage
   const [profiles, setProfiles] = useState<UserProfile[]>(() => {
     const saved = localStorage.getItem('ar_profiles');
-    if (saved) return JSON.parse(saved);
+    let parsed = saved ? JSON.parse(saved) : null;
+    if (parsed) {
+      return parsed.map((p: any) => ({
+        ...p,
+        role: mapLegacyToNewRole(p.role)
+      }));
+    }
     
     // Seed initial organizational roster matching our test accounts
     return [
-      { id: 'user-ops-admin', fullName: 'IT Director Admin', email: 'admin@company.com', role: 'IT Admin', departmentId: 'dep-ops', status: 'Active', createdAt: '2026-06-01T00:00:00Z', mfaEnabled: true },
+      { id: 'user-ops-admin', fullName: 'IT Director Admin', email: 'admin@company.com', role: 'IT Support', departmentId: 'dep-ops', status: 'Active', createdAt: '2026-06-01T00:00:00Z', mfaEnabled: true },
       { id: 'user-super-admin', fullName: 'Chief Information Officer', email: 'super@company.com', role: 'Super Admin', departmentId: 'dep-ops', status: 'Active', createdAt: '2026-06-01T00:00:00Z', mfaEnabled: true },
-      { id: 'user-mgr-bob', fullName: 'Bob Vance', email: 'manager.bob@company.com', role: 'Manager', departmentId: 'dep-fin', status: 'Active', createdAt: '2026-06-01T00:00:00Z', mfaEnabled: true },
-      { id: 'user-emp-jane', fullName: 'Jane Smith', email: 'employee.jane@company.com', role: 'User', departmentId: 'dep-eng', status: 'Active', createdAt: '2026-06-05T00:00:00Z', mfaEnabled: true },
-      { id: 'user-emp-mark', fullName: 'Mark Fletcher', email: 'finance.mark@company.com', role: 'User', departmentId: 'dep-fin', status: 'Active', createdAt: '2026-06-06T00:00:00Z', mfaEnabled: true },
-      { id: 'user-emp-lucy', fullName: 'Lucy Thorne', email: 'hr.lucy@company.com', role: 'User', departmentId: 'dep-hr', status: 'Active', createdAt: '2026-06-07T00:00:00Z', mfaEnabled: true }
+      { id: 'user-mgr-bob', fullName: 'Bob Vance', email: 'manager.bob@company.com', role: 'Manager (Approver)', departmentId: 'dep-fin', status: 'Active', createdAt: '2026-06-01T00:00:00Z', mfaEnabled: true },
+      { id: 'user-emp-jane', fullName: 'Jane Smith', email: 'employee.jane@company.com', role: 'Employee (Requester)', departmentId: 'dep-eng', status: 'Active', createdAt: '2026-06-05T00:00:00Z', mfaEnabled: true },
+      { id: 'user-emp-mark', fullName: 'Mark Fletcher', email: 'finance.mark@company.com', role: 'Employee (Requester)', departmentId: 'dep-fin', status: 'Active', createdAt: '2026-06-06T00:00:00Z', mfaEnabled: true },
+      { id: 'user-emp-lucy', fullName: 'Lucy Thorne', email: 'hr.lucy@company.com', role: 'Employee (Requester)', departmentId: 'dep-hr', status: 'Active', createdAt: '2026-06-07T00:00:00Z', mfaEnabled: true }
     ];
   });
 
@@ -125,7 +140,7 @@ export default function App() {
 
     const now = new Date();
     const fortyEightHoursInMs = 48 * 60 * 60 * 1000;
-    const managers = profiles.filter(p => p.role === 'Manager');
+    const managers = profiles.filter(p => p.role === 'Manager (Approver)' || p.role === 'Super Admin');
     if (managers.length === 0) return;
 
     setNotifications(prevNotifications => {
@@ -196,105 +211,193 @@ export default function App() {
     };
   }, []);
 
+  const [isRefreshing, setIsRefreshing] = useState(false);
+
   // Load real profiles from Supabase DB on user sign-in/mount
-  useEffect(() => {
-    const fetchProfilesFromDB = async () => {
-      if (!sessionUserEmail) return;
-      try {
-        const { data, error } = await supabase
-          .from('profiles')
-          .select('*')
-          .order('created_at', { ascending: true });
-          
-        if (error) {
-          console.error("Error fetching profiles from Supabase DB:", error);
-          return;
-        }
+  const fetchProfilesFromDB = useCallback(async () => {
+    if (!sessionUserEmail) return;
+    try {
+      const { data, error } = await supabase
+        .from('profiles')
+        .select('*')
+        .order('created_at', { ascending: true });
         
-        if (data) {
-          // Map snake_case columns back to camelCase models
-          const mappedProfiles: UserProfile[] = data.map(item => ({
-            id: item.id,
-            fullName: item.full_name,
-            email: item.email,
-            role: item.role as any,
-            departmentId: item.department_id || 'dep-eng',
-            status: item.status as any,
-            createdAt: item.created_at,
-            mfaEnabled: item.mfa_enabled,
-            notificationPreferences: item.notification_preferences
-          }));
-          
-          setProfiles(prev => {
-            // Keep existing local profiles if they are not in database (e.g. seeds),
-            // but prioritize database profiles by email matching.
-            const merged = [...mappedProfiles];
-            prev.forEach(localP => {
-              const exists = merged.some(dbP => dbP.email.toLowerCase().trim() === localP.email.toLowerCase().trim());
-              if (!exists) {
-                merged.push(localP);
-              }
-            });
-            return merged;
-          });
-        }
-      } catch (err) {
-        console.error("Failed to load profiles from DB:", err);
+      if (error) {
+        console.error("Error fetching profiles from Supabase DB:", error);
+        return;
       }
-    };
-    
-    fetchProfilesFromDB();
+      
+      if (data) {
+        // Map snake_case columns back to camelCase models
+        const mappedProfiles: UserProfile[] = data.map(item => ({
+          id: item.id,
+          fullName: item.full_name,
+          email: item.email,
+          role: mapDbToUiRole(item.role, item.email, item.notification_preferences?.uiRole),
+          departmentId: item.department_id || 'dep-eng',
+          status: item.status as any,
+          createdAt: item.created_at,
+          mfaEnabled: item.mfa_enabled,
+          notificationPreferences: item.notification_preferences
+        }));
+        
+        setProfiles(prev => {
+          // Keep existing local profiles if they are not in database (e.g. seeds),
+          // but prioritize database profiles by email matching.
+          const merged = [...mappedProfiles];
+          prev.forEach(localP => {
+            const exists = merged.some(dbP => dbP.email.toLowerCase().trim() === localP.email.toLowerCase().trim());
+            if (!exists) {
+              merged.push(localP);
+            }
+          });
+          return merged;
+        });
+      }
+    } catch (err) {
+      console.error("Failed to load profiles from DB:", err);
+    }
   }, [sessionUserEmail]);
 
   // Load real access requests from Supabase DB on user sign-in/mount
-  useEffect(() => {
-    const fetchRequestsFromDB = async () => {
-      if (!currentUser) return;
-      try {
-        const { data, error } = await supabase
-          .from('access_requests')
-          .select('*')
-          .order('created_at', { ascending: false });
-          
-        if (error) {
-          console.error("Error fetching requests from Supabase DB:", error);
-          return;
-        }
+  const fetchRequestsFromDB = useCallback(async () => {
+    if (!sessionUserEmail) return;
+    try {
+      const { data, error } = await supabase
+        .from('access_requests')
+        .select('*')
+        .order('created_at', { ascending: false });
         
-        if (data) {
-          // Map snake_case columns back to camelCase models
-          const mappedRequests: AccessRequest[] = data.map(item => ({
-            id: item.id,
-            userId: item.user_id,
-            userEmail: item.user_email,
-            userFullName: item.user_full_name,
-            departmentId: item.department_id || '',
-            title: item.title,
-            accessType: item.access_type as any,
-            systemName: item.system_name,
-            justification: item.justification,
-            priority: item.priority as any,
-            startDate: item.start_date,
-            endDate: item.end_date || undefined,
-            status: item.status as any,
-            createdAt: item.created_at,
-            attachments: item.attachments || [],
-            comments: item.comments || undefined,
-            commentsHistory: item.comments_history || [],
-            provisionedCredentials: item.provisioned_credentials || undefined
-          }));
-          
-          setRequests(mappedRequests);
-        } else {
-          setRequests([]);
-        }
-      } catch (err) {
-        console.error("Failed to load requests from DB:", err);
+      if (error) {
+        console.error("Error fetching requests from Supabase DB:", error);
+        return;
       }
-    };
-    
+      
+      if (data) {
+        // Map snake_case columns back to camelCase models
+        const mappedRequests: AccessRequest[] = data.map(item => ({
+          id: item.id,
+          userId: item.user_id,
+          userEmail: item.user_email,
+          userFullName: item.user_full_name,
+          departmentId: item.department_id || '',
+          title: item.title,
+          accessType: item.access_type as any,
+          systemName: item.system_name,
+          justification: item.justification,
+          priority: item.priority as any,
+          startDate: item.start_date,
+          endDate: item.end_date || undefined,
+          status: item.status as any,
+          createdAt: item.created_at,
+          attachments: item.attachments || [],
+          comments: item.comments || undefined,
+          commentsHistory: item.comments_history || [],
+          provisionedCredentials: item.provisioned_credentials || undefined
+        }));
+        
+        setRequests(mappedRequests);
+      } else {
+        setRequests([]);
+      }
+    } catch (err) {
+      console.error("Failed to load requests from DB:", err);
+    }
+  }, [sessionUserEmail]);
+
+  // Manual Trigger Refresh Action
+  const handleRefreshData = async () => {
+    setIsRefreshing(true);
+    await Promise.all([fetchProfilesFromDB(), fetchRequestsFromDB()]);
+    setTimeout(() => setIsRefreshing(false), 800);
+  };
+
+  useEffect(() => {
+    fetchProfilesFromDB();
+  }, [fetchProfilesFromDB]);
+
+  useEffect(() => {
     fetchRequestsFromDB();
-  }, [currentUser]);
+  }, [fetchRequestsFromDB]);
+
+  // Real-time synchronization subscription for profiles and access requests
+  useEffect(() => {
+    if (!sessionUserEmail) return;
+
+    const channel = supabase
+      .channel('realtime-schema-db-changes')
+      .on(
+        'postgres_changes',
+        { event: '*', schema: 'public', table: 'profiles' },
+        (payload) => {
+          if (payload.eventType === 'INSERT' || payload.eventType === 'UPDATE') {
+            const item = payload.new;
+            const mappedProfile: UserProfile = {
+              id: item.id,
+              fullName: item.full_name,
+              email: item.email,
+              role: mapDbToUiRole(item.role, item.email, item.notification_preferences?.uiRole),
+              departmentId: item.department_id || 'dep-eng',
+              status: item.status as any,
+              createdAt: item.created_at,
+              mfaEnabled: item.mfa_enabled,
+              notificationPreferences: item.notification_preferences
+            };
+            setProfiles(prev => {
+              const exists = prev.some(p => p.id === mappedProfile.id || p.email.toLowerCase().trim() === mappedProfile.email.toLowerCase().trim());
+              if (exists) {
+                return prev.map(p => (p.id === mappedProfile.id || p.email.toLowerCase().trim() === mappedProfile.email.toLowerCase().trim()) ? mappedProfile : p);
+              }
+              return [...prev, mappedProfile];
+            });
+          }
+        }
+      )
+      .on(
+        'postgres_changes',
+        { event: '*', schema: 'public', table: 'access_requests' },
+        (payload) => {
+          if (payload.eventType === 'INSERT' || payload.eventType === 'UPDATE') {
+            const item = payload.new;
+            const mappedRequest: AccessRequest = {
+              id: item.id,
+              userId: item.user_id,
+              userEmail: item.user_email,
+              userFullName: item.user_full_name,
+              departmentId: item.department_id || '',
+              title: item.title,
+              accessType: item.access_type as any,
+              systemName: item.system_name,
+              justification: item.justification,
+              priority: item.priority as any,
+              startDate: item.start_date,
+              endDate: item.end_date || undefined,
+              status: item.status as any,
+              createdAt: item.created_at,
+              attachments: item.attachments || [],
+              comments: item.comments || undefined,
+              commentsHistory: item.comments_history || [],
+              provisionedCredentials: item.provisioned_credentials || undefined
+            };
+            setRequests(prev => {
+              const exists = prev.some(r => r.id === mappedRequest.id);
+              if (exists) {
+                return prev.map(r => r.id === mappedRequest.id ? mappedRequest : r);
+              }
+              return [mappedRequest, ...prev];
+            });
+          } else if (payload.eventType === 'DELETE') {
+            const oldId = payload.old.id;
+            setRequests(prev => prev.filter(r => r.id !== oldId));
+          }
+        }
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, [sessionUserEmail]);
 
   // Automatically heal/sync profiles for users who have submitted requests but are missing from public.profiles
   useEffect(() => {
@@ -313,7 +416,7 @@ export default function App() {
             id: req.userId || 'user-' + Math.random().toString(36).substr(2, 9),
             fullName: req.userFullName || email.split('@')[0].split('.').map(w => w.charAt(0).toUpperCase() + w.slice(1)).join(' '),
             email: email,
-            role: 'User',
+            role: 'Employee (Requester)',
             departmentId: req.departmentId || 'dep-eng',
             status: 'Active',
             createdAt: req.createdAt || new Date().toISOString()
@@ -336,9 +439,10 @@ export default function App() {
                     id: newP.id,
                     full_name: newP.fullName,
                     email: newP.email,
-                    role: 'User',
+                    role: mapUiToDbRole(newP.role),
                     department_id: newP.departmentId,
-                    status: 'Active'
+                    status: 'Active',
+                    notification_preferences: { uiRole: newP.role }
                   })
                   .then(({ error }) => {
                     if (error) {
@@ -370,7 +474,43 @@ export default function App() {
           handleLogout();
           return;
         }
-        setCurrentUser(foundProfile);
+
+        // HEAL / UPGRADE PROFILE UUID: Make sure seed profiles map to real Supabase auth IDs
+        const syncProfileIdAndUpsert = async () => {
+          try {
+            const { data: { user } } = await supabase.auth.getUser();
+            if (user && user.id) {
+              const isUUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(foundProfile.id);
+              const updatedProfile = { ...foundProfile, id: user.id };
+              
+              if (!isUUID || foundProfile.id !== user.id) {
+                setProfiles(prev => prev.map(p => p.email.toLowerCase().trim() === trimKey ? updatedProfile : p));
+              }
+              setCurrentUser(updatedProfile);
+
+              // Force database upsert with correct user.id UUID and exact role / dept
+              await supabase.from('profiles').upsert({
+                id: user.id,
+                full_name: updatedProfile.fullName,
+                email: updatedProfile.email,
+                role: mapUiToDbRole(updatedProfile.role),
+                department_id: updatedProfile.departmentId,
+                status: updatedProfile.status,
+                mfa_enabled: updatedProfile.mfaEnabled || false,
+                notification_preferences: {
+                  ...(updatedProfile.notificationPreferences || {}),
+                  uiRole: updatedProfile.role
+                }
+              });
+            } else {
+              setCurrentUser(foundProfile);
+            }
+          } catch (err) {
+            console.error("Failed to sync profile UUID:", err);
+            setCurrentUser(foundProfile);
+          }
+        };
+        syncProfileIdAndUpsert();
       } else {
         // Fetch the actual user ID from Supabase Auth to ensure we use the correct UUID
         const syncProfile = async () => {
@@ -381,7 +521,7 @@ export default function App() {
               id: actualId,
               fullName: trimKey.split('@')[0].split('.').map(w => w.charAt(0).toUpperCase() + w.slice(1)).join(' '),
               email: trimKey,
-              role: 'User',
+              role: 'Employee (Requester)',
               departmentId: 'dep-eng',
               status: 'Active',
               createdAt: new Date().toISOString()
@@ -398,9 +538,10 @@ export default function App() {
                 id: user.id,
                 full_name: newProfile.fullName,
                 email: newProfile.email,
-                role: 'User',
+                role: mapUiToDbRole(newProfile.role),
                 department_id: 'dep-eng',
-                status: 'Active'
+                status: 'Active',
+                notification_preferences: { uiRole: newProfile.role }
               });
             }
           } catch (err) {
@@ -427,7 +568,7 @@ export default function App() {
 
     // Detect role for log context mapping
     const foundProfile = profiles.find(p => p.email.toLowerCase() === authenticatedEmail.toLowerCase());
-    const matchedRole = foundProfile?.role || 'User';
+    const matchedRole = foundProfile?.role || 'Employee (Requester)';
 
     // Create Audit entry for login
     logAuditEvent(
@@ -487,9 +628,10 @@ export default function App() {
             id: user.id,
             full_name: details.fullName,
             email: authenticatedEmail,
-            role: details.role,
+            role: mapUiToDbRole(details.role),
             department_id: details.departmentId,
-            status: 'Active'
+            status: 'Active',
+            notification_preferences: { uiRole: details.role }
           });
         if (error) {
           console.error("Error upserting profile in database:", error);
@@ -538,7 +680,7 @@ export default function App() {
   };
 
   // Switch sandbox role on the fly
-  const handleSwitchSandboxRole = (newRole: UserRole) => {
+  const handleSwitchSandboxRole = async (newRole: UserRole) => {
     if (!currentUser) return;
     setGlobalSearchTerm('');
     const updated = { ...currentUser, role: newRole };
@@ -557,6 +699,29 @@ export default function App() {
       `Your development session environment has been successfully mapped to: ${newRole}.`,
       'info_requested'
     );
+
+    // Persist persona swap in the Supabase database so RLS reflects this role!
+    const isUUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(currentUser.id);
+    if (isUUID) {
+      try {
+        await supabase
+          .from('profiles')
+          .update({ 
+            role: mapUiToDbRole(newRole),
+            notification_preferences: {
+              ...(currentUser.notificationPreferences || {}),
+              uiRole: newRole
+            }
+          })
+          .eq('id', currentUser.id);
+        
+        // Re-fetch requests and profiles from the DB to get the newly authorized dataset
+        await fetchRequestsFromDB();
+        await fetchProfilesFromDB();
+      } catch (err) {
+        console.error("Failed to sync sandbox role in database:", err);
+      }
+    }
   };
 
   // Helper constructors
@@ -683,7 +848,7 @@ export default function App() {
       let nextStatus: RequestStatus = req.status;
       let notificationType: AppNotification['type'] = 'info_requested';
 
-      if (currentUser.role === 'Manager' || currentUser.role === 'Super Admin') {
+      if (currentUser.role === 'Manager (Approver)' || currentUser.role === 'Super Admin') {
         if (action === 'Approve') {
           nextStatus = 'Approved';
           notificationType = 'approved';
@@ -694,7 +859,7 @@ export default function App() {
           nextStatus = 'Under Review';
           notificationType = 'info_requested';
         }
-      } else if (currentUser.role === 'IT Admin') {
+      } else if (currentUser.role === 'IT Support' || currentUser.role === 'Admin') {
         // Complete workflow
         if (action === 'Approve') {
           nextStatus = 'Completed';
@@ -789,7 +954,7 @@ export default function App() {
       let nextStatus: RequestStatus = req.status;
       let notificationType: AppNotification['type'] = 'info_requested';
 
-      if (currentUser.role === 'Manager' || currentUser.role === 'Super Admin') {
+      if (currentUser.role === 'Manager (Approver)' || currentUser.role === 'Super Admin') {
         if (action === 'Approve') {
           nextStatus = 'Approved';
           notificationType = 'approved';
@@ -883,7 +1048,10 @@ export default function App() {
       try {
         const { error } = await supabase
           .from('profiles')
-          .update({ role: newRole })
+          .update({ 
+            role: mapUiToDbRole(newRole),
+            notification_preferences: { uiRole: newRole }
+          })
           .eq('id', userId);
         if (error) {
           console.error("Error updating profile role in DB:", error);
@@ -995,11 +1163,14 @@ export default function App() {
           .from('profiles')
           .update({
             full_name: updatedProfile.fullName,
-            role: updatedProfile.role,
+            role: mapUiToDbRole(updatedProfile.role),
             department_id: updatedProfile.departmentId,
             status: updatedProfile.status,
             mfa_enabled: updatedProfile.mfaEnabled || false,
-            notification_preferences: updatedProfile.notificationPreferences || {}
+            notification_preferences: {
+              ...(updatedProfile.notificationPreferences || {}),
+              uiRole: updatedProfile.role
+            }
           })
           .eq('id', updatedProfile.id);
         if (error) {
@@ -1039,7 +1210,7 @@ export default function App() {
     if (!currentUser) return null;
 
     switch (currentUser.role) {
-      case 'User':
+      case 'Employee (Requester)':
         return (
           <UserDashboard
             requests={requests}
@@ -1051,7 +1222,7 @@ export default function App() {
             onSearchChange={setGlobalSearchTerm}
           />
         );
-      case 'Manager':
+      case 'Manager (Approver)':
         return (
           <ManagerDashboard
             requests={requests}
@@ -1061,7 +1232,8 @@ export default function App() {
             onBulkWorkflowAction={handleBulkWorkflowAction}
           />
         );
-      case 'IT Admin':
+      case 'IT Support':
+      case 'Admin':
       case 'Super Admin':
         // Display full Admin dashboard view metrics
         return (
@@ -1110,6 +1282,8 @@ export default function App() {
         globalSearchTerm={globalSearchTerm}
         setGlobalSearchTerm={setGlobalSearchTerm}
         onOpenProfile={() => setIsProfileOpen(true)}
+        onRefreshData={handleRefreshData}
+        isRefreshing={isRefreshing}
       />
 
       <div className="flex flex-col lg:flex-row min-h-[calc(100vh-5rem)]">
@@ -1136,7 +1310,7 @@ export default function App() {
               </button>
 
               {/* Only show User Directory, Auditing, Reports for Admin contexts */}
-              {(currentUser?.role === 'IT Admin' || currentUser?.role === 'Super Admin') && (
+              {(currentUser?.role === 'Admin' || currentUser?.role === 'IT Support' || currentUser?.role === 'Super Admin') && (
                 <>
                   <button
                     onClick={() => setActiveTab('users')}
