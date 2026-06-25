@@ -12,7 +12,7 @@ interface ManagerDashboardProps {
 }
 
 export default function ManagerDashboard({ 
-  requests, 
+  requests = [], 
   onSelectRequest,
   searchTerm: externalSearchTerm,
   onSearchChange: externalOnSearchChange,
@@ -29,23 +29,29 @@ export default function ManagerDashboard({
   const searchTerm = externalSearchTerm !== undefined ? externalSearchTerm : localSearchTerm;
   const setSearchTerm = externalOnSearchChange !== undefined ? externalOnSearchChange : setLocalSearchTerm;
 
+  const safeRequests = Array.isArray(requests) ? requests : [];
+
   // Requests that require Manager Review (Submitted or Under Review status)
-  const pendingApprovals = requests.filter(r => r.status === 'Submitted' || r.status === 'Under Review');
+  const pendingApprovals = safeRequests.filter(r => r && (r.status === 'Submitted' || r.status === 'Under Review'));
   // Team requests includes everything that has progressed past Draft
-  const teamRequests = requests.filter(r => r.status !== 'Draft');
+  const teamRequests = safeRequests.filter(r => r && r.status !== 'Draft');
 
   // Stats
   const totalTeamRequests = teamRequests.length;
   const pendingCount = pendingApprovals.length;
-  const approvedCount = teamRequests.filter(r => r.status === 'Completed' || r.status === 'Approved').length;
-  const rejectedCount = teamRequests.filter(r => r.status === 'Rejected').length;
+  const approvedCount = teamRequests.filter(r => r && (r.status === 'Completed' || r.status === 'Approved')).length;
+  const rejectedCount = teamRequests.filter(r => r && r.status === 'Rejected').length;
   const successRatio = totalTeamRequests > 0 ? Math.round((approvedCount / (approvedCount + rejectedCount || 1)) * 100) : 0;
 
   const filteredPending = React.useMemo(() => {
     const filtered = pendingApprovals.filter(req => {
-      const matchesSearch = req.title.toLowerCase().includes(searchTerm.toLowerCase()) || 
-                            req.userFullName.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                            req.systemName.toLowerCase().includes(searchTerm.toLowerCase());
+      const titleStr = req.title || '';
+      const userFullNameStr = req.userFullName || '';
+      const systemNameStr = req.systemName || '';
+      const searchStr = searchTerm || '';
+      const matchesSearch = titleStr.toLowerCase().includes(searchStr.toLowerCase()) || 
+                            userFullNameStr.toLowerCase().includes(searchStr.toLowerCase()) ||
+                            systemNameStr.toLowerCase().includes(searchStr.toLowerCase());
       const matchesPriority = priorityFilter === 'All' || req.priority === priorityFilter;
 
       return matchesSearch && matchesPriority;

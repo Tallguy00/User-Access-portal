@@ -39,9 +39,13 @@ export default function UserDashboard({
 
   const filteredRequests = React.useMemo(() => {
     const filtered = userRequests.filter(req => {
-      const matchesSearch = req.title.toLowerCase().includes(searchTerm.toLowerCase()) || 
-                            req.systemName.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                            req.accessType.toLowerCase().includes(searchTerm.toLowerCase());
+      const titleStr = req.title || '';
+      const systemNameStr = req.systemName || '';
+      const accessTypeStr = req.accessType || '';
+      const searchStr = searchTerm || '';
+      const matchesSearch = titleStr.toLowerCase().includes(searchStr.toLowerCase()) || 
+                            systemNameStr.toLowerCase().includes(searchStr.toLowerCase()) ||
+                            accessTypeStr.toLowerCase().includes(searchStr.toLowerCase());
       
       if (statusFilter === 'All') return matchesSearch;
       if (statusFilter === 'Active') return matchesSearch && ['Submitted', 'Under Review', 'Approved'].includes(req.status);

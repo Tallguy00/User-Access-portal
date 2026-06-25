@@ -34,8 +34,11 @@ export default function UserManagement({
   const [successMsg, setSuccessMsg] = useState('');
 
   const filteredProfiles = profiles.filter(user => {
-    const matchesSearch = user.fullName.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                          user.email.toLowerCase().includes(searchTerm.toLowerCase());
+    const fullNameStr = user.fullName || '';
+    const emailStr = user.email || '';
+    const searchStr = searchTerm || '';
+    const matchesSearch = fullNameStr.toLowerCase().includes(searchStr.toLowerCase()) ||
+                          emailStr.toLowerCase().includes(searchStr.toLowerCase());
     const matchesRole = roleFilter === 'All' || user.role === roleFilter;
     return matchesSearch && matchesRole;
   });

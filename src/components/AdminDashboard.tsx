@@ -36,9 +36,13 @@ export default function AdminDashboard({
 
   const filteredApproved = React.useMemo(() => {
     const filtered = approvedRequests.filter(req => {
-      return req.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
-             req.userFullName.toLowerCase().includes(searchTerm.toLowerCase()) ||
-             req.systemName.toLowerCase().includes(searchTerm.toLowerCase());
+      const titleStr = req.title || '';
+      const userFullNameStr = req.userFullName || '';
+      const systemNameStr = req.systemName || '';
+      const searchStr = searchTerm || '';
+      return titleStr.toLowerCase().includes(searchStr.toLowerCase()) ||
+             userFullNameStr.toLowerCase().includes(searchStr.toLowerCase()) ||
+             systemNameStr.toLowerCase().includes(searchStr.toLowerCase());
     });
 
     return [...filtered].sort((a, b) => {

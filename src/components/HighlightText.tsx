@@ -6,15 +6,16 @@ interface HighlightTextProps {
 }
 
 export default function HighlightText({ text, search }: HighlightTextProps) {
+  const safeText = text || '';
   if (!search || !search.trim()) {
-    return <>{text}</>;
+    return <>{safeText}</>;
   }
 
   try {
     // Escape regex characters safely to avoid crashing on special keys
     const escapedSearch = search.replace(/[-\/\\^$*+?.()|[\]{}]/g, '\\$&');
     const regex = new RegExp(`(${escapedSearch})`, 'gi');
-    const parts = text.split(regex);
+    const parts = safeText.split(regex);
 
     return (
       <>
