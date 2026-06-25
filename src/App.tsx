@@ -196,6 +196,56 @@ export default function App() {
     };
   }, []);
 
+  // Load real profiles from Supabase DB on user sign-in/mount
+  useEffect(() => {
+    const fetchProfilesFromDB = async () => {
+      if (!sessionUserEmail) return;
+      try {
+        const { data, error } = await supabase
+          .from('profiles')
+          .select('*')
+          .order('created_at', { ascending: true });
+          
+        if (error) {
+          console.error("Error fetching profiles from Supabase DB:", error);
+          return;
+        }
+        
+        if (data && data.length > 0) {
+          // Map snake_case columns back to camelCase models
+          const mappedProfiles: UserProfile[] = data.map(item => ({
+            id: item.id,
+            fullName: item.full_name,
+            email: item.email,
+            role: item.role as any,
+            departmentId: item.department_id || 'dep-eng',
+            status: item.status as any,
+            createdAt: item.created_at,
+            mfaEnabled: item.mfa_enabled,
+            notificationPreferences: item.notification_preferences
+          }));
+          
+          setProfiles(prev => {
+            // Keep existing local profiles if they are not in database (e.g. seeds),
+            // but prioritize database profiles by email matching.
+            const merged = [...mappedProfiles];
+            prev.forEach(localP => {
+              const exists = merged.some(dbP => dbP.email.toLowerCase().trim() === localP.email.toLowerCase().trim());
+              if (!exists) {
+                merged.push(localP);
+              }
+            });
+            return merged;
+          });
+        }
+      } catch (err) {
+        console.error("Failed to load profiles from DB:", err);
+      }
+    };
+    
+    fetchProfilesFromDB();
+  }, [sessionUserEmail]);
+
   // Load real access requests from Supabase DB on user sign-in/mount
   useEffect(() => {
     const fetchRequestsFromDB = async () => {
@@ -313,9 +363,10 @@ export default function App() {
     // Leverage supabase.auth status to confirm the registered user account
     const { data: { user } } = await supabase.auth.getUser();
     const authenticatedEmail = user?.email || email;
+    const userId = user?.id || 'user-' + Math.random().toString(36).substr(2, 9);
 
     const newProfile: UserProfile = {
-      id: 'user-' + Math.random().toString(36).substr(2, 9),
+      id: userId,
       fullName: details.fullName,
       email: authenticatedEmail,
       role: details.role,
@@ -330,6 +381,7 @@ export default function App() {
         const updated = [...prev];
         updated[index] = {
           ...updated[index],
+          id: userId,
           fullName: details.fullName,
           role: details.role,
           departmentId: details.departmentId,
@@ -339,6 +391,27 @@ export default function App() {
       }
       return [...prev, newProfile];
     });
+
+    // Explicitly write profile to Supabase database so all platforms see it immediately
+    if (user?.id) {
+      try {
+        const { error } = await supabase
+          .from('profiles')
+          .upsert({
+            id: user.id,
+            full_name: details.fullName,
+            email: authenticatedEmail,
+            role: details.role,
+            department_id: details.departmentId,
+            status: 'Active'
+          });
+        if (error) {
+          console.error("Error upserting profile in database:", error);
+        }
+      } catch (err) {
+        console.error("Failed to upsert profile in database:", err);
+      }
+    }
     
     localStorage.setItem('ar_session_user_email', authenticatedEmail);
     setSessionUserEmail(authenticatedEmail);
@@ -715,8 +788,25 @@ export default function App() {
   };
 
   // Administration Updates
-  const handleUpdateRole = (userId: string, newRole: UserRole) => {
+  const handleUpdateRole = async (userId: string, newRole: UserRole) => {
     if (!currentUser) return;
+
+    // Persist role update to Supabase database if UUID is valid
+    const isUUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(userId);
+    if (isUUID) {
+      try {
+        const { error } = await supabase
+          .from('profiles')
+          .update({ role: newRole })
+          .eq('id', userId);
+        if (error) {
+          console.error("Error updating profile role in DB:", error);
+        }
+      } catch (err) {
+        console.error("Failed to update profile role in DB:", err);
+      }
+    }
+
     setProfiles(prev => prev.map(p => {
       if (p.id !== userId) return p;
 
@@ -737,8 +827,25 @@ export default function App() {
     }));
   };
 
-  const handleUpdateStatus = (userId: string, newStatus: 'Active' | 'Deactivated') => {
+  const handleUpdateStatus = async (userId: string, newStatus: 'Active' | 'Deactivated') => {
     if (!currentUser) return;
+
+    // Persist status update to Supabase database if UUID is valid
+    const isUUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(userId);
+    if (isUUID) {
+      try {
+        const { error } = await supabase
+          .from('profiles')
+          .update({ status: newStatus })
+          .eq('id', userId);
+        if (error) {
+          console.error("Error updating profile status in DB:", error);
+        }
+      } catch (err) {
+        console.error("Failed to update profile status in DB:", err);
+      }
+    }
+
     setProfiles(prev => prev.map(p => {
       if (p.id !== userId) return p;
 
@@ -790,9 +897,32 @@ export default function App() {
     alert(`Compliance credentials ticket created and sent securely to ${userEmail}. Audit trails wrote complete trace log.`);
   };
 
-  const handleSaveProfile = (updatedProfile: UserProfile) => {
+  const handleSaveProfile = async (updatedProfile: UserProfile) => {
     setCurrentUser(updatedProfile);
     setProfiles((prev) => prev.map((p) => (p.id === updatedProfile.id ? updatedProfile : p)));
+
+    // Sync own profile settings to Supabase DB if UUID is valid
+    const isUUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(updatedProfile.id);
+    if (isUUID) {
+      try {
+        const { error } = await supabase
+          .from('profiles')
+          .update({
+            full_name: updatedProfile.fullName,
+            role: updatedProfile.role,
+            department_id: updatedProfile.departmentId,
+            status: updatedProfile.status,
+            mfa_enabled: updatedProfile.mfaEnabled || false,
+            notification_preferences: updatedProfile.notificationPreferences || {}
+          })
+          .eq('id', updatedProfile.id);
+        if (error) {
+          console.error("Error saving profile to DB:", error);
+        }
+      } catch (err) {
+        console.error("Failed to save profile to DB:", err);
+      }
+    }
 
     logAuditEvent(
       updatedProfile.email,

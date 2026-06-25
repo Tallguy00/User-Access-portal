@@ -603,7 +603,14 @@ export function RegisterScreen({ onSuccess, onNavigate, departments, profiles }:
       
       const { data, error } = await supabase.auth.signUp({ 
         email: emailToSubmit, 
-        password: passToSubmit 
+        password: passToSubmit,
+        options: {
+          data: {
+            full_name: fullName,
+            role: role,
+            department_id: dept
+          }
+        }
       });
       
       if (error) {

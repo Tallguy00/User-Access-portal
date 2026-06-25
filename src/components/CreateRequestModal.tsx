@@ -79,8 +79,24 @@ export default function CreateRequestModal({ isOpen, onClose, onSubmit, departme
     const { data: { user } } = await supabase.auth.getUser();
     const userId = user?.id || 'anonymous';
     
-    // 2. Generate path
-    const extension = originalName.split('.').pop() || 'png';
+    // 2. Generate path safely (handling Android files without extension or uppercase/malformed names)
+    let extension = 'png';
+    const hasDot = originalName.includes('.');
+    if (hasDot) {
+      const parts = originalName.split('.');
+      const ext = parts[parts.length - 1].toLowerCase().trim();
+      // Validate that extension contains only standard alphanumeric characters (2 to 5 letters)
+      if (/^[a-z0-9]{2,5}$/.test(ext)) {
+        extension = ext;
+      }
+    } else if (fileOrBlob.type) {
+      // Fallback to mime type mapping if filename has no dot
+      const mimeExt = fileOrBlob.type.split('/').pop();
+      if (mimeExt && /^[a-z0-9]{2,5}$/.test(mimeExt.toLowerCase())) {
+        extension = mimeExt.toLowerCase();
+      }
+    }
+    
     const uuid = typeof crypto.randomUUID === 'function' ? crypto.randomUUID() : Math.random().toString(36).substring(2, 15);
     const filePath = `${userId}/requests/${reqId}/${uuid}.${extension}`;
     
@@ -132,11 +148,18 @@ export default function CreateRequestModal({ isOpen, onClose, onSubmit, departme
     
     for (const file of filesArray) {
       try {
+        // Clean up mobile filename for display if it has a weird name or no dot
+        let cleanName = file.name;
+        if (!file.name.includes('.') || file.name.startsWith('content:') || file.name.includes(':')) {
+          const extension = file.type ? file.type.split('/').pop() || 'png' : 'png';
+          cleanName = `uploaded_file_${Math.floor(1000 + Math.random() * 9000)}.${extension}`;
+        }
+
         // Upload file to Supabase Storage directly
-        const uploadResult = await uploadFileToSupabase(file, file.name);
+        const uploadResult = await uploadFileToSupabase(file, cleanName);
         
         const attachmentObj = {
-          name: file.name,
+          name: cleanName,
           size: (file.size / (1024 * 1024)).toFixed(2) + 'MB',
           previewUrl: uploadResult.signedUrl,
           filePath: uploadResult.filePath

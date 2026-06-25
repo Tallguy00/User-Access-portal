@@ -569,8 +569,10 @@ export default function RequestDetailsModal({
                   } hover:shadow-sm`}>
                     <div className="flex items-center justify-between">
                       <div className="flex items-center gap-2 text-xs text-gray-700 dark:text-gray-300 truncate">
-                        {file.name.toLowerCase().endsWith('.xlsx') ? (
+                        {/\.(xlsx|xls|csv)$/i.test(file.name) ? (
                           <FileSpreadsheet className="w-4 h-4 text-emerald-500 shrink-0" />
+                        ) : /\.(png|jpg|jpeg|gif|webp|bmp|heic|heif)$/i.test(file.name) ? (
+                          <Eye className="w-4 h-4 text-purple-555 shrink-0" />
                         ) : (
                           <FileText className="w-4 h-4 text-blue-500 shrink-0" />
                         )}
@@ -622,12 +624,15 @@ export default function RequestDetailsModal({
                   </div>
                 ))}
               </div>
+            </div>
+          )}
 
-              {/* Document Preview Panel */}
-              {activePreviewFileIndex !== null && request.attachments && request.attachments[activePreviewFileIndex] && (() => {
-                const f = request.attachments[activePreviewFileIndex];
-                const isExcel = f.name.toLowerCase().endsWith('.xlsx') || f.name.toLowerCase().endsWith('.csv');
-                const isImage = f.name.toLowerCase().endsWith('.png') || f.name.toLowerCase().endsWith('.jpg') || f.name.toLowerCase().endsWith('.jpeg');
+          {/* Document Preview Panel */}
+          {activePreviewFileIndex !== null && request.attachments && request.attachments[activePreviewFileIndex] && (() => {
+            const f = request.attachments[activePreviewFileIndex];
+            const isExcel = /\.(xlsx|xls|csv)$/i.test(f.name);
+            const isImage = /\.(png|jpg|jpeg|gif|webp|bmp|heic|heif)$/i.test(f.name);
+            const isPdf = /\.pdf$/i.test(f.name);
                 
                 return (
                   <div className="border border-blue-200 dark:border-blue-900/40 rounded-xl overflow-hidden bg-gray-50/50 dark:bg-gray-950/30 shadow-inner p-4 space-y-4 animate-modal-slide">
@@ -718,6 +723,30 @@ export default function RequestDetailsModal({
                           </table>
                         </div>
                       </div>
+                    ) : isPdf && f.previewUrl ? (
+                      <div className="space-y-3 text-left">
+                        <div className="flex items-center justify-between flex-wrap gap-2">
+                          <div className="text-[10px] text-gray-400 font-mono font-bold uppercase bg-white dark:bg-gray-900 px-2 py-1 rounded inline-block border border-gray-150 dark:border-gray-800">
+                            PDF Document: {f.name} ({f.size})
+                          </div>
+                          <a 
+                            href={f.previewUrl} 
+                            target="_blank" 
+                            rel="noopener noreferrer" 
+                            className="inline-flex items-center gap-1 text-xs text-blue-600 dark:text-blue-400 hover:underline font-bold"
+                          >
+                            <span>Open Document in New Tab</span>
+                            <ExternalLink className="w-3.5 h-3.5" />
+                          </a>
+                        </div>
+                        <div className="border border-gray-200 dark:border-gray-800 rounded-xl overflow-hidden bg-white">
+                          <iframe 
+                            src={`${f.previewUrl}#toolbar=0`} 
+                            className="w-full h-[450px] border-0" 
+                            title={f.name}
+                          />
+                        </div>
+                      </div>
                     ) : (
                       <div className="space-y-3">
                         <div className="text-[10px] text-gray-400 font-mono font-bold uppercase bg-white dark:bg-gray-900 px-2 py-1 rounded inline-block border border-gray-150 dark:border-gray-800">
@@ -759,8 +788,6 @@ export default function RequestDetailsModal({
                   </div>
                 );
               })()}
-            </div>
-          )}
 
           {/* System Audit/Approval Timeline */}
           <div className="space-y-4 border-t border-gray-100 dark:border-gray-800 pt-5">
