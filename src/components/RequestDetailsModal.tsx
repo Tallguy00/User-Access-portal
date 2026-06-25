@@ -92,7 +92,7 @@ export default function RequestDetailsModal({
       {
         id: 'initial-' + request.id,
         authorName: request.userFullName,
-        authorRole: 'Employee (Requester)' as UserRole,
+        authorRole: 'User' as UserRole,
         action: 'Submit',
         text: request.justification || 'No justification provided.',
         timestamp: request.createdAt
@@ -103,7 +103,7 @@ export default function RequestDetailsModal({
       computed.push({
         id: 'legacy-' + request.id,
         authorName: 'Sponsoring Approver (Legacy)',
-        authorRole: 'Manager (Approver)' as UserRole,
+        authorRole: 'Manager' as UserRole,
         action: request.status === 'Completed' ? 'Complete' : request.status === 'Rejected' ? 'Reject' : 'Approve',
         text: request.comments,
         timestamp: request.createdAt // fallback to createdAt
@@ -295,13 +295,13 @@ export default function RequestDetailsModal({
   };
 
   // Determine if active user can approve this request based on security workflow rules:
-  // "Flow: Employee -> Manager -> IT Support -> Access Granted"
+  // "Flow: User -> Manager -> IT Admin -> Access Granted"
   // Manager approves requests in 'Submitted' or 'Under Review' status.
-  // IT Support or Admin processes approved requests in 'Approved' status to mark them as 'Completed' and grant access.
-  const canActAsManager = (currentUserRole === 'Manager (Approver)' || currentUserRole === 'Super Admin') && 
+  // IT Admin processes approved requests in 'Approved' status to mark them as 'Completed' and grant access.
+  const canActAsManager = (currentUserRole === 'Manager' || currentUserRole === 'Super Admin') && 
                           (request.status === 'Submitted' || request.status === 'Under Review');
 
-  const canActAsITAdmin = (currentUserRole === 'IT Support' || currentUserRole === 'Admin' || currentUserRole === 'Super Admin') && 
+  const canActAsITAdmin = (currentUserRole === 'IT Admin' || currentUserRole === 'Super Admin') && 
                           (request.status === 'Approved');
 
   // Completed status check
@@ -631,9 +631,8 @@ export default function RequestDetailsModal({
           {activePreviewFileIndex !== null && request.attachments && request.attachments[activePreviewFileIndex] && (() => {
             const f = request.attachments[activePreviewFileIndex];
             const isExcel = /\.(xlsx|xls|csv)$/i.test(f.name);
+            const isImage = /\.(png|jpg|jpeg|gif|webp|bmp|heic|heif)$/i.test(f.name);
             const isPdf = /\.pdf$/i.test(f.name);
-            // Treat as image if it has standard image extension OR if it is any other non-pdf, non-excel uploaded file (fallback for Android octet-streams)
-            const isImage = /\.(png|jpg|jpeg|gif|webp|bmp|heic|heif)$/i.test(f.name) || (!isExcel && !isPdf && f.previewUrl !== undefined);
                 
                 return (
                   <div className="border border-blue-200 dark:border-blue-900/40 rounded-xl overflow-hidden bg-gray-50/50 dark:bg-gray-950/30 shadow-inner p-4 space-y-4 animate-modal-slide">
@@ -653,24 +652,11 @@ export default function RequestDetailsModal({
                         <X className="w-3.5 h-3.5" />
                       </button>
                     </div>
- 
+
                     {isImage ? (
                       <div className="space-y-2">
-                        <div className="flex items-center justify-between flex-wrap gap-2">
-                          <div className="text-[10px] text-gray-400 font-mono font-bold uppercase bg-white dark:bg-gray-900 px-2 py-1 rounded inline-block border border-gray-150 dark:border-gray-800">
-                            File: {f.name} ({f.size})
-                          </div>
-                          {f.previewUrl && (
-                            <a 
-                              href={f.previewUrl} 
-                              target="_blank" 
-                              rel="noopener noreferrer" 
-                              className="inline-flex items-center gap-1 text-xs text-blue-600 dark:text-blue-400 hover:underline font-bold"
-                            >
-                              <span>Open/Download Original Asset</span>
-                              <ExternalLink className="w-3.5 h-3.5" />
-                            </a>
-                          )}
+                        <div className="text-[10px] text-gray-400 font-mono font-bold uppercase bg-white dark:bg-gray-900 px-2 py-1 rounded inline-block border border-gray-150 dark:border-gray-800">
+                          File: {f.name} ({f.size})
                         </div>
                         <div className="p-2 bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-800 overflow-hidden flex items-center justify-center">
                           {f.previewUrl ? (

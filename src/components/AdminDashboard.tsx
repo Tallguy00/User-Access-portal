@@ -1,6 +1,6 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState } from 'react';
 import { AccessRequest, UserProfile, Department, RequestStatus } from '../types';
-import { ShieldAlert, Cpu, KeyRound, CheckSquare, Search, Lock, AlertTriangle, Play, CheckCircle, BarChart2, TrendingUp, Calendar as CalendarIcon, Download, FileSpreadsheet, Clock, Activity, AlertCircle, UserCheck, CalendarDays, ExternalLink, Ghost, HelpCircle, ShieldAlert as ShieldAlertIcon } from 'lucide-react';
+import { ShieldAlert, Cpu, KeyRound, CheckSquare, Search, Lock, AlertTriangle, Play, CheckCircle, BarChart2, TrendingUp, Calendar as CalendarIcon, Download, FileSpreadsheet } from 'lucide-react';
 import HighlightText from './HighlightText';
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, BarChart, Bar, Cell, PieChart, Pie, Legend } from 'recharts';
 
@@ -23,126 +23,9 @@ export default function AdminDashboard({
 }: AdminDashboardProps) {
   const [localSearchTerm, setLocalSearchTerm] = useState('');
   const [sortBy, setSortBy] = useState<string>('date-desc');
-  const [activeAnalyticsTab, setActiveAnalyticsTab] = useState<'requests' | 'accounts'>('requests');
-  const [accountsSearchQuery, setAccountsSearchQuery] = useState('');
 
   const searchTerm = externalSearchTerm !== undefined ? externalSearchTerm : localSearchTerm;
   const setSearchTerm = externalOnSearchChange !== undefined ? externalOnSearchChange : setLocalSearchTerm;
-
-  // --------------------------------------------------
-  // ACCOUNT AGE & ACTIVITY ANALYTICS COMPUTATIONS
-  // --------------------------------------------------
-  const accountMetrics = useMemo(() => {
-    const now = new Date();
-    
-    // Calculate age for each user profile
-    const usersWithAgeAndActivity = profiles.map(profile => {
-      const regDate = profile.createdAt ? new Date(profile.createdAt) : new Date('2026-06-01T00:00:00Z');
-      const ageInDays = Math.max(0, Math.floor((now.getTime() - regDate.getTime()) / (1000 * 60 * 60 * 24)));
-      
-      // Find requests for this user
-      const userRequests = requests.filter(r => r.userEmail?.toLowerCase().trim() === profile.email?.toLowerCase().trim());
-      
-      // Determine last request activity date
-      let lastActivityDate: Date | null = null;
-      if (userRequests.length > 0) {
-        const sortedRequests = [...userRequests].sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
-        lastActivityDate = new Date(sortedRequests[0].createdAt);
-      }
-      
-      const daysSinceLastActivity = lastActivityDate 
-        ? Math.max(0, Math.floor((now.getTime() - lastActivityDate.getTime()) / (1000 * 60 * 60 * 24)))
-        : null;
-
-      // Determine activity status
-      let activityStatus: 'Active' | 'Stale' | 'Dormant' = 'Dormant';
-      if (userRequests.length > 0) {
-        if (daysSinceLastActivity !== null && daysSinceLastActivity <= 7) {
-          activityStatus = 'Active';
-        } else if (daysSinceLastActivity !== null && daysSinceLastActivity <= 30) {
-          activityStatus = 'Stale';
-        } else {
-          activityStatus = 'Dormant';
-        }
-      } else {
-        // No requests at all. If the account is older than 3 days, it's dormant.
-        activityStatus = ageInDays > 3 ? 'Dormant' : 'Active';
-      }
-
-      // Check for registration anomalies
-      const anomalies: string[] = [];
-      
-      // Anomaly 1: No request activity at all & account age > 7 days
-      if (userRequests.length === 0 && ageInDays > 7) {
-        anomalies.push('Abandoned: Account age > 7 days with zero requests created.');
-      }
-      
-      // Anomaly 2: Non-corporate/personal email domain (gmail, yahoo, etc.)
-      const personalDomains = ['gmail.com', 'yahoo.com', 'hotmail.com', 'outlook.com', 'mail.ru', 'aol.com'];
-      const emailDomain = profile.email?.split('@')[1]?.toLowerCase();
-      if (emailDomain && personalDomains.includes(emailDomain)) {
-        anomalies.push(`External Email: Registered with personal domain (${emailDomain}).`);
-      }
-      
-      // Anomaly 3: Suspicious/Anomalous name length or format
-      if (profile.fullName && (profile.fullName.trim().length < 3 || /^[0-9]+$/.test(profile.fullName))) {
-        anomalies.push('Name Anomaly: Name is extremely short or contains invalid numeric values.');
-      }
-
-      // Anomaly 4: Deactivated but has submitted requests
-      if (profile.status === 'Deactivated' && userRequests.some(r => r.status === 'Submitted' || r.status === 'Under Review')) {
-        anomalies.push('Status Conflict: Profile is Deactivated but has active/pending requests.');
-      }
-
-      return {
-        ...profile,
-        ageInDays,
-        userRequestsCount: userRequests.length,
-        daysSinceLastActivity,
-        activityStatus,
-        anomalies,
-        isAnomalous: anomalies.length > 0
-      };
-    });
-
-    // Aggregate statistics
-    const totalUsers = usersWithAgeAndActivity.length;
-    const activeAccounts = usersWithAgeAndActivity.filter(u => u.activityStatus === 'Active' && u.status === 'Active').length;
-    const staleAccounts = usersWithAgeAndActivity.filter(u => u.activityStatus === 'Stale' && u.status === 'Active').length;
-    const dormantAccounts = usersWithAgeAndActivity.filter(u => u.activityStatus === 'Dormant' || u.status === 'Deactivated').length;
-    const anomalousAccounts = usersWithAgeAndActivity.filter(u => u.isAnomalous).length;
-
-    // Age Buckets for Chart
-    const ageBuckets = [
-      { name: 'New (< 24h)', count: usersWithAgeAndActivity.filter(u => u.ageInDays === 0).length },
-      { name: 'Recent (1-7d)', count: usersWithAgeAndActivity.filter(u => u.ageInDays >= 1 && u.ageInDays <= 7).length },
-      { name: 'Mid (8-30d)', count: usersWithAgeAndActivity.filter(u => u.ageInDays >= 8 && u.ageInDays <= 30).length },
-      { name: 'Stale (> 30d)', count: usersWithAgeAndActivity.filter(u => u.ageInDays > 30).length }
-    ];
-
-    // Activity States for Pie Chart
-    const activityStates = [
-      { name: 'Active (< 7d)', value: activeAccounts, color: '#10b981' },
-      { name: 'Stale (8-30d)', value: staleAccounts, color: '#f59e0b' },
-      { name: 'Dormant / Locked', value: dormantAccounts, color: '#ef4444' }
-    ].filter(item => item.value > 0);
-
-    return {
-      users: usersWithAgeAndActivity,
-      stats: {
-        totalUsers,
-        activeAccounts,
-        staleAccounts,
-        dormantAccounts,
-        anomalousAccounts,
-        averageAge: totalUsers > 0 
-          ? Math.round(usersWithAgeAndActivity.reduce((acc, u) => acc + u.ageInDays, 0) / totalUsers)
-          : 0
-      },
-      ageBuckets,
-      activityStates
-    };
-  }, [profiles, requests]);
 
   // Requests approved by managers ready for IT to grant access (Completed / Approved status)
   const approvedRequests = requests.filter(r => r.status === 'Approved');
@@ -415,515 +298,212 @@ export default function AdminDashboard({
 
       </div>
 
-      {/* Analytics Tabs Selector */}
-      <div className="flex border-b border-gray-150 dark:border-gray-800 gap-4">
-        <button
-          onClick={() => setActiveAnalyticsTab('requests')}
-          className={`pb-3 text-sm font-extrabold transition-all border-b-2 flex items-center gap-2 px-1 cursor-pointer ${
-            activeAnalyticsTab === 'requests'
-              ? 'border-blue-600 text-blue-600 dark:text-blue-400 dark:border-blue-400'
-              : 'border-transparent text-gray-400 hover:text-gray-650 dark:hover:text-gray-300'
-          }`}
-        >
-          <TrendingUp className="w-4 h-4" />
-          <span>Access Request Trends</span>
-        </button>
-        <button
-          onClick={() => setActiveAnalyticsTab('accounts')}
-          className={`pb-3 text-sm font-extrabold transition-all border-b-2 flex items-center gap-2 px-1 cursor-pointer ${
-            activeAnalyticsTab === 'accounts'
-              ? 'border-blue-600 text-blue-600 dark:text-blue-400 dark:border-blue-400'
-              : 'border-transparent text-gray-400 hover:text-gray-650 dark:hover:text-gray-300'
-          }`}
-        >
-          <Clock className="w-4 h-4" />
-          <span>Account Age & Activity Diagnostics</span>
-          {accountMetrics.stats.anomalousAccounts > 0 && (
-            <span className="bg-red-500 text-white text-[10px] font-black px-1.5 py-0.2 rounded-full animate-pulse">
-              {accountMetrics.stats.anomalousAccounts}
-            </span>
-          )}
-        </button>
-      </div>
+      {/* Daily Request Volume Trends Line Chart */}
+      <div className="bg-white dark:bg-gray-900 border border-gray-100 dark:border-gray-800 p-6 rounded-2xl shadow-sm flex flex-col gap-6">
+        <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 border-b border-gray-100 dark:border-gray-800 pb-4">
+          <div className="flex items-center gap-3">
+            <div className="p-2.5 bg-blue-50 dark:bg-blue-950/40 text-blue-600 dark:text-blue-400 rounded-xl">
+              <BarChart2 className="w-5 h-5" />
+            </div>
+            <div>
+              <h2 className="text-base font-extrabold text-gray-950 dark:text-white flex items-center gap-2">
+                Access Requests Submission Volume
+                <span className="text-[10px] font-mono font-bold px-2 py-0.5 bg-blue-50 dark:bg-blue-950/40 border border-blue-100 dark:border-blue-900/50 text-blue-600 dark:text-blue-400 rounded-full select-none">
+                  Last 30 Days
+                </span>
+              </h2>
+              <p className="text-xs text-gray-400 mt-0.5">Continuous request tracking timeline to help identify load and seasonal spikes.</p>
+            </div>
+          </div>
 
-      {activeAnalyticsTab === 'requests' ? (
-        <>
-          {/* Daily Request Volume Trends Line Chart */}
-          <div className="bg-white dark:bg-gray-900 border border-gray-100 dark:border-gray-800 p-6 rounded-2xl shadow-sm flex flex-col gap-6">
-            <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 border-b border-gray-100 dark:border-gray-800 pb-4">
-              <div className="flex items-center gap-3">
-                <div className="p-2.5 bg-blue-50 dark:bg-blue-950/40 text-blue-600 dark:text-blue-400 rounded-xl">
-                  <BarChart2 className="w-5 h-5" />
-                </div>
-                <div>
-                  <h2 className="text-base font-extrabold text-gray-955 dark:text-white flex items-center gap-2">
-                    Access Requests Submission Volume
-                    <span className="text-[10px] font-mono font-bold px-2 py-0.5 bg-blue-50 dark:bg-blue-950/40 border border-blue-100 dark:border-blue-900/50 text-blue-600 dark:text-blue-400 rounded-full select-none">
-                      Last 30 Days
-                    </span>
-                  </h2>
-                  <p className="text-xs text-gray-400 mt-0.5">Continuous request tracking timeline to help identify load and seasonal spikes.</p>
-                </div>
-              </div>
-
-              {/* Quick Insights Pills */}
-              <div className="grid grid-cols-3 gap-2 shrink-0">
-                <div className="p-2.5 bg-gray-50 dark:bg-gray-800/40 border border-gray-100 dark:border-gray-800 rounded-xl text-center min-w-[70px]">
-                  <div className="text-[9px] font-bold text-gray-400 uppercase tracking-wider">30D Volume</div>
-                  <div className="text-sm font-black text-gray-900 dark:text-white mt-0.5 flex items-center justify-center gap-0.5">
-                    <TrendingUp className="w-3 h-3 text-blue-500 shrink-0" />
-                    <span>{chartInsights.total30Days}</span>
-                  </div>
-                </div>
-                <div className="p-2.5 bg-gray-50 dark:bg-gray-800/40 border border-gray-100 dark:border-gray-800 rounded-xl text-center min-w-[70px]">
-                  <div className="text-[9px] font-bold text-gray-400 uppercase tracking-wider">Daily Avg</div>
-                  <div className="text-sm font-black text-gray-900 dark:text-white mt-0.5">{chartInsights.averagePerDay}</div>
-                </div>
-                <div className="p-2.5 bg-gray-50 dark:bg-gray-800/40 border border-gray-100 dark:border-gray-800 rounded-xl text-center min-w-[70px]">
-                  <div className="text-[9px] font-bold text-gray-400 uppercase tracking-wider">Peak Count</div>
-                  <div className="text-sm font-black text-gray-900 dark:text-white mt-0.5" title={`On ${chartInsights.peakDate}`}>
-                    {chartInsights.peakCount} <span className="text-[9px] font-normal text-gray-400">({chartInsights.peakDate})</span>
-                  </div>
-                </div>
+          {/* Quick Insights Pills */}
+          <div className="grid grid-cols-3 gap-2 shrink-0">
+            <div className="p-2.5 bg-gray-50 dark:bg-gray-800/40 border border-gray-100 dark:border-gray-800 rounded-xl text-center min-w-[70px]">
+              <div className="text-[9px] font-bold text-gray-400 uppercase tracking-wider">30D Volume</div>
+              <div className="text-sm font-black text-gray-900 dark:text-white mt-0.5 flex items-center justify-center gap-0.5">
+                <TrendingUp className="w-3 h-3 text-blue-500 shrink-0" />
+                <span>{chartInsights.total30Days}</span>
               </div>
             </div>
+            <div className="p-2.5 bg-gray-50 dark:bg-gray-800/40 border border-gray-100 dark:border-gray-800 rounded-xl text-center min-w-[70px]">
+              <div className="text-[9px] font-bold text-gray-400 uppercase tracking-wider">Daily Avg</div>
+              <div className="text-sm font-black text-gray-900 dark:text-white mt-0.5">{chartInsights.averagePerDay}</div>
+            </div>
+            <div className="p-2.5 bg-gray-50 dark:bg-gray-800/40 border border-gray-100 dark:border-gray-800 rounded-xl text-center min-w-[70px]">
+              <div className="text-[9px] font-bold text-gray-400 uppercase tracking-wider">Peak Count</div>
+              <div className="text-sm font-black text-gray-900 dark:text-white mt-0.5" title={`On ${chartInsights.peakDate}`}>
+                {chartInsights.peakCount} <span className="text-[9px] font-normal text-gray-400">({chartInsights.peakDate})</span>
+              </div>
+            </div>
+          </div>
+        </div>
 
-            <div className="w-full h-[280px]">
+        <div className="w-full h-[280px]">
+          <ResponsiveContainer width="100%" height="100%">
+            <LineChart
+              data={chartData}
+              margin={{ top: 10, right: 10, left: -25, bottom: 0 }}
+            >
+              <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#e2e8f0" className="dark:stroke-gray-800/50" />
+              <XAxis 
+                dataKey="date" 
+                tick={{ fill: '#9ca3af', fontSize: 10, fontFamily: 'monospace' }}
+                axisLine={false}
+                tickLine={false}
+                dy={10}
+              />
+              <YAxis 
+                tick={{ fill: '#9ca3af', fontSize: 10, fontFamily: 'monospace' }} 
+                axisLine={false}
+                tickLine={false}
+                allowDecimals={false}
+                dx={-10}
+              />
+              <Tooltip
+                content={({ active, payload, label }: any) => {
+                  if (active && payload && payload.length) {
+                    return (
+                      <div className="bg-gray-950 dark:bg-gray-900 p-3 rounded-xl border border-gray-800 dark:border-gray-750 shadow-xl font-sans text-xs">
+                        <div className="flex items-center gap-1.5 font-mono text-[9px] text-gray-400 uppercase tracking-wider">
+                          <CalendarIcon className="w-3 h-3 text-blue-500" />
+                          <span>{label}</span>
+                        </div>
+                        <p className="text-sm font-black text-white mt-1.5">
+                          {payload[0].value} {payload[0].value === 1 ? 'Request' : 'Requests'}
+                        </p>
+                      </div>
+                    );
+                  }
+                  return null;
+                }}
+              />
+              <Line 
+                type="monotone" 
+                dataKey="count" 
+                stroke="#3b82f6" 
+                strokeWidth={3} 
+                dot={{ r: 3, stroke: '#3b82f6', strokeWidth: 1, fill: '#ffffff' }}
+                activeDot={{ r: 6, stroke: '#3b82f6', strokeWidth: 2, fill: '#3b82f6' }}
+              />
+            </LineChart>
+          </ResponsiveContainer>
+        </div>
+      </div>
+
+      {/* Analytics Insights: Department & Status Distribution */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        
+        {/* Department Distribution */}
+        <div className="bg-white dark:bg-gray-900 border border-gray-100 dark:border-gray-800 p-6 rounded-2xl shadow-sm flex flex-col gap-4">
+          <div className="flex items-center gap-3 border-b border-gray-100 dark:border-gray-800 pb-4">
+            <div className="p-2.5 bg-indigo-50 dark:bg-indigo-950/40 text-indigo-600 dark:text-indigo-400 rounded-xl">
+              <BarChart2 className="w-5 h-5" />
+            </div>
+            <div>
+              <h3 className="text-sm font-bold text-gray-955 dark:text-white">Requests by Department</h3>
+              <p className="text-xs text-gray-400 mt-0.5">Frequency of privileges requested across business units.</p>
+            </div>
+          </div>
+          
+          <div className="w-full h-[240px] flex items-center justify-center">
+            {departmentData.some(d => d.count > 0) ? (
               <ResponsiveContainer width="100%" height="100%">
-                <LineChart
-                  data={chartData}
-                  margin={{ top: 10, right: 10, left: -25, bottom: 0 }}
+                <BarChart
+                  layout="vertical"
+                  data={departmentData}
+                  margin={{ top: 10, right: 20, left: 10, bottom: 5 }}
                 >
-                  <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#e2e8f0" className="dark:stroke-gray-800/50" />
-                  <XAxis 
-                    dataKey="date" 
-                    tick={{ fill: '#9ca3af', fontSize: 10, fontFamily: 'monospace' }}
-                    axisLine={false}
-                    tickLine={false}
-                    dy={10}
-                  />
-                  <YAxis 
-                    tick={{ fill: '#9ca3af', fontSize: 10, fontFamily: 'monospace' }} 
-                    axisLine={false}
-                    tickLine={false}
-                    allowDecimals={false}
-                    dx={-10}
-                  />
+                  <CartesianGrid strokeDasharray="3 3" horizontal={false} stroke="#e2e8f0" className="dark:stroke-gray-800/50" />
+                  <XAxis type="number" tick={{ fill: '#9ca3af', fontSize: 10, fontFamily: 'monospace' }} axisLine={false} tickLine={false} allowDecimals={false} />
+                  <YAxis type="category" dataKey="name" tick={{ fill: '#4b5563', fontSize: 10 }} axisLine={false} tickLine={false} width={110} />
                   <Tooltip
-                    content={({ active, payload, label }: any) => {
+                    content={({ active, payload }: any) => {
                       if (active && payload && payload.length) {
                         return (
-                          <div className="bg-gray-950 dark:bg-gray-900 p-3 rounded-xl border border-gray-800 dark:border-gray-750 shadow-xl font-sans text-xs">
-                            <div className="flex items-center gap-1.5 font-mono text-[9px] text-gray-400 uppercase tracking-wider">
-                              <CalendarIcon className="w-3 h-3 text-blue-500" />
-                              <span>{label}</span>
-                            </div>
-                            <p className="text-sm font-black text-white mt-1.5">
-                              {payload[0].value} {payload[0].value === 1 ? 'Request' : 'Requests'}
-                            </p>
+                          <div className="bg-gray-950 dark:bg-gray-900 p-2.5 rounded-xl border border-gray-800 shadow-xl text-white text-xs font-sans">
+                            <span className="font-semibold block text-gray-400 mb-1">{payload[0].payload.name}</span>
+                            <span className="font-bold text-sm text-white">{payload[0].value} {payload[0].value === 1 ? 'Request' : 'Requests'}</span>
                           </div>
                         );
                       }
                       return null;
                     }}
                   />
-                  <Line 
-                    type="monotone" 
-                    dataKey="count" 
-                    stroke="#3b82f6" 
-                    strokeWidth={3} 
-                    dot={{ r: 3, stroke: '#3b82f6', strokeWidth: 1, fill: '#ffffff' }}
-                    activeDot={{ r: 6, stroke: '#3b82f6', strokeWidth: 2, fill: '#3b82f6' }}
-                  />
-                </LineChart>
+                  <Bar dataKey="count" radius={[0, 4, 4, 0]} barSize={14}>
+                    {departmentData.map((entry, index) => {
+                      const colors = ['#4f46e5', '#3b82f6', '#06b6d4', '#10b981', '#f59e0b'];
+                      return <Cell key={`cell-${index}`} fill={colors[index % colors.length]} />;
+                    })}
+                  </Bar>
+                </BarChart>
               </ResponsiveContainer>
-            </div>
-          </div>
-
-          {/* Analytics Insights: Department & Status Distribution */}
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-            
-            {/* Department Distribution */}
-            <div className="bg-white dark:bg-gray-900 border border-gray-100 dark:border-gray-800 p-6 rounded-2xl shadow-sm flex flex-col gap-4">
-              <div className="flex items-center gap-3 border-b border-gray-100 dark:border-gray-800 pb-4">
-                <div className="p-2.5 bg-indigo-50 dark:bg-indigo-950/40 text-indigo-600 dark:text-indigo-400 rounded-xl">
-                  <BarChart2 className="w-5 h-5" />
-                </div>
-                <div>
-                  <h3 className="text-sm font-bold text-gray-955 dark:text-white">Requests by Department</h3>
-                  <p className="text-xs text-gray-400 mt-0.5">Frequency of privileges requested across business units.</p>
-                </div>
-              </div>
-              
-              <div className="w-full h-[240px] flex items-center justify-center">
-                {departmentData.some(d => d.count > 0) ? (
-                  <ResponsiveContainer width="100%" height="100%">
-                    <BarChart
-                      layout="vertical"
-                      data={departmentData}
-                      margin={{ top: 10, right: 20, left: 10, bottom: 5 }}
-                    >
-                      <CartesianGrid strokeDasharray="3 3" horizontal={false} stroke="#e2e8f0" className="dark:stroke-gray-800/50" />
-                      <XAxis type="number" tick={{ fill: '#9ca3af', fontSize: 10, fontFamily: 'monospace' }} axisLine={false} tickLine={false} allowDecimals={false} />
-                      <YAxis type="category" dataKey="name" tick={{ fill: '#4b5563', fontSize: 10 }} axisLine={false} tickLine={false} width={110} />
-                      <Tooltip
-                        content={({ active, payload }: any) => {
-                          if (active && payload && payload.length) {
-                            return (
-                              <div className="bg-gray-950 dark:bg-gray-900 p-2.5 rounded-xl border border-gray-800 shadow-xl text-white text-xs font-sans">
-                                <span className="font-semibold block text-gray-400 mb-1">{payload[0].payload.name}</span>
-                                <span className="font-bold text-sm text-white">{payload[0].value} {payload[0].value === 1 ? 'Request' : 'Requests'}</span>
-                              </div>
-                            );
-                          }
-                          return null;
-                        }}
-                      />
-                      <Bar dataKey="count" radius={[0, 4, 4, 0]} barSize={14}>
-                        {departmentData.map((entry, index) => {
-                          const colors = ['#4f46e5', '#3b82f6', '#06b6d4', '#10b981', '#f59e0b'];
-                          return <Cell key={`cell-${index}`} fill={colors[index % colors.length]} />;
-                        })}
-                      </Bar>
-                    </BarChart>
-                  </ResponsiveContainer>
-                ) : (
-                  <span className="text-xs text-gray-400">No department request records found</span>
-                )}
-              </div>
-            </div>
-
-            {/* Status Distribution */}
-            <div className="bg-white dark:bg-gray-900 border border-gray-100 dark:border-gray-800 p-6 rounded-2xl shadow-sm flex flex-col gap-4">
-              <div className="flex items-center gap-3 border-b border-gray-100 dark:border-gray-800 pb-4">
-                <div className="p-2.5 bg-emerald-50 dark:bg-emerald-950/40 text-emerald-600 dark:text-emerald-400 rounded-xl">
-                  <TrendingUp className="w-5 h-5" />
-                </div>
-                <div>
-                  <h3 className="text-sm font-bold text-gray-955 dark:text-white">Request Status Distribution</h3>
-                  <p className="text-xs text-gray-400 mt-0.5">Real-time status breakdown across the authorization lifecycle.</p>
-                </div>
-              </div>
-
-              <div className="w-full h-[240px] flex items-center justify-center">
-                {statusData.length > 0 ? (
-                  <ResponsiveContainer width="100%" height="100%">
-                    <PieChart>
-                      <Pie
-                        data={statusData}
-                        cx="40%"
-                        cy="50%"
-                        innerRadius={55}
-                        outerRadius={80}
-                        paddingAngle={4}
-                        dataKey="value"
-                      >
-                        {statusData.map((entry, index) => (
-                          <Cell key={`cell-${index}`} fill={STATUS_COLORS[entry.name] || '#3b82f6'} />
-                        ))}
-                      </Pie>
-                      <Tooltip
-                        content={({ active, payload }: any) => {
-                          if (active && payload && payload.length) {
-                            const total = statusData.reduce((acc, curr) => acc + curr.value, 0);
-                            const percent = ((payload[0].value / total) * 100).toFixed(0);
-                            return (
-                              <div className="bg-gray-950 dark:bg-gray-900 p-2.5 rounded-xl border border-gray-800 shadow-xl text-white text-xs font-sans">
-                                <span className="font-semibold block text-gray-400 mb-1">{payload[0].name}</span>
-                                <span className="font-bold text-sm text-white">{payload[0].value} {payload[0].value === 1 ? 'Request' : 'Requests'} ({percent}%)</span>
-                              </div>
-                            );
-                          }
-                          return null;
-                        }}
-                      />
-                      <Legend 
-                        verticalAlign="middle" 
-                        align="right" 
-                        layout="vertical"
-                        iconType="circle"
-                        iconSize={8}
-                        wrapperStyle={{ fontSize: '11px', fontFamily: 'sans-serif', paddingLeft: '10px' }}
-                      />
-                    </PieChart>
-                  </ResponsiveContainer>
-                ) : (
-                  <span className="text-xs text-gray-400">No status distribution records found</span>
-                )}
-              </div>
-            </div>
-
-          </div>
-        </>
-      ) : (
-        <div className="space-y-6">
-          {/* Key Metrics Grid */}
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-            <div className="bg-white dark:bg-gray-900 border border-gray-100 dark:border-gray-800 p-5 rounded-2xl flex items-center gap-4 shadow-sm">
-              <div className="p-3 bg-blue-50 dark:bg-blue-950/40 text-blue-600 dark:text-blue-400 rounded-xl">
-                <CalendarDays className="w-5 h-5" />
-              </div>
-              <div>
-                <div className="text-[10px] font-bold text-gray-400 uppercase tracking-wider">Avg Account Age</div>
-                <div className="text-xl font-black text-gray-955 dark:text-white">{accountMetrics.stats.averageAge} Days</div>
-                <div className="text-[10px] text-gray-500">Corporate-wide average</div>
-              </div>
-            </div>
-
-            <div className="bg-white dark:bg-gray-900 border border-gray-100 dark:border-gray-800 p-5 rounded-2xl flex items-center gap-4 shadow-sm">
-              <div className="p-3 bg-red-50 dark:bg-red-950/20 text-red-655 dark:text-red-400 rounded-xl">
-                <Ghost className="w-5 h-5" />
-              </div>
-              <div>
-                <div className="text-[10px] font-bold text-gray-400 uppercase tracking-wider">Dormant Accounts</div>
-                <div className="text-xl font-black text-gray-955 dark:text-white">{accountMetrics.stats.dormantAccounts}</div>
-                <div className="text-[10px] text-gray-500">No requests / inactive</div>
-              </div>
-            </div>
-
-            <div className="bg-white dark:bg-gray-900 border border-gray-100 dark:border-gray-800 p-5 rounded-2xl flex items-center gap-4 shadow-sm">
-              <div className="p-3 bg-amber-50 dark:bg-amber-950/40 text-amber-600 dark:text-amber-400 rounded-xl">
-                <ShieldAlertIcon className="w-5 h-5" />
-              </div>
-              <div>
-                <div className="text-[10px] font-bold text-gray-400 uppercase tracking-wider">Anomalies Detected</div>
-                <div className="text-xl font-black text-gray-955 dark:text-white">{accountMetrics.stats.anomalousAccounts}</div>
-                <div className="text-[10px] text-gray-500">Security triggers flagged</div>
-              </div>
-            </div>
-
-            <div className="bg-white dark:bg-gray-900 border border-gray-100 dark:border-gray-800 p-5 rounded-2xl flex items-center gap-4 shadow-sm">
-              <div className="p-3 bg-emerald-50 dark:bg-emerald-950/40 text-emerald-600 dark:text-emerald-400 rounded-xl">
-                <UserCheck className="w-5 h-5" />
-              </div>
-              <div>
-                <div className="text-[10px] font-bold text-gray-400 uppercase tracking-wider">Total IAM Roster</div>
-                <div className="text-xl font-black text-gray-955 dark:text-white">{accountMetrics.stats.totalUsers} Profiles</div>
-                <div className="text-[10px] text-gray-500">Registered directories</div>
-              </div>
-            </div>
-          </div>
-
-          {/* Account Age & Activity Charts */}
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-            
-            {/* Account Age Distribution Chart */}
-            <div className="bg-white dark:bg-gray-900 border border-gray-100 dark:border-gray-800 p-6 rounded-2xl shadow-sm flex flex-col gap-4">
-              <div className="flex items-center gap-3 border-b border-gray-100 dark:border-gray-800 pb-4">
-                <div className="p-2.5 bg-blue-50 dark:bg-blue-950/40 text-blue-600 dark:text-blue-400 rounded-xl">
-                  <Clock className="w-5 h-5" />
-                </div>
-                <div>
-                  <h3 className="text-sm font-bold text-gray-955 dark:text-white">Account Age Groups</h3>
-                  <p className="text-xs text-gray-400 mt-0.5">Distribution of user accounts based on operational lifespan.</p>
-                </div>
-              </div>
-              
-              <div className="w-full h-[240px]">
-                <ResponsiveContainer width="100%" height="100%">
-                  <BarChart data={accountMetrics.ageBuckets} margin={{ top: 10, right: 10, left: -25, bottom: 5 }}>
-                    <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#e2e8f0" className="dark:stroke-gray-800/50" />
-                    <XAxis dataKey="name" tick={{ fill: '#9ca3af', fontSize: 10 }} axisLine={false} tickLine={false} />
-                    <YAxis tick={{ fill: '#9ca3af', fontSize: 10 }} axisLine={false} tickLine={false} allowDecimals={false} />
-                    <Tooltip
-                      content={({ active, payload }: any) => {
-                        if (active && payload && payload.length) {
-                          return (
-                            <div className="bg-gray-950 dark:bg-gray-900 p-2.5 rounded-xl border border-gray-800 shadow-xl text-white text-xs">
-                              <span className="font-semibold block text-gray-400 mb-1">{payload[0].payload.name}</span>
-                              <span className="font-bold text-sm text-white">{payload[0].value} {payload[0].value === 1 ? 'User' : 'Users'}</span>
-                            </div>
-                          );
-                        }
-                        return null;
-                      }}
-                    />
-                    <Bar dataKey="count" fill="#2563eb" radius={[4, 4, 0, 0]} barSize={36}>
-                      {accountMetrics.ageBuckets.map((entry, index) => {
-                        const colors = ['#3b82f6', '#06b6d4', '#4f46e5', '#6366f1'];
-                        return <Cell key={`cell-${index}`} fill={colors[index % colors.length]} />;
-                      })}
-                    </Bar>
-                  </BarChart>
-                </ResponsiveContainer>
-              </div>
-            </div>
-
-            {/* Account Activity States Chart */}
-            <div className="bg-white dark:bg-gray-900 border border-gray-100 dark:border-gray-800 p-6 rounded-2xl shadow-sm flex flex-col gap-4">
-              <div className="flex items-center gap-3 border-b border-gray-100 dark:border-gray-800 pb-4">
-                <div className="p-2.5 bg-indigo-50 dark:bg-indigo-950/40 text-indigo-600 dark:text-indigo-400 rounded-xl">
-                  <Activity className="w-5 h-5" />
-                </div>
-                <div>
-                  <h3 className="text-sm font-bold text-gray-955 dark:text-white">Active Roster Ratio</h3>
-                  <p className="text-xs text-gray-400 mt-0.5">Categorization of users by frequency of privilege interactions.</p>
-                </div>
-              </div>
-              
-              <div className="w-full h-[240px] flex items-center justify-center">
-                {accountMetrics.activityStates.length > 0 ? (
-                  <ResponsiveContainer width="100%" height="100%">
-                    <PieChart>
-                      <Pie
-                        data={accountMetrics.activityStates}
-                        cx="40%"
-                        cy="50%"
-                        innerRadius={55}
-                        outerRadius={80}
-                        paddingAngle={4}
-                        dataKey="value"
-                      >
-                        {accountMetrics.activityStates.map((entry, index) => (
-                          <Cell key={`cell-${index}`} fill={entry.color} />
-                        ))}
-                      </Pie>
-                      <Tooltip
-                        content={({ active, payload }: any) => {
-                          if (active && payload && payload.length) {
-                            const total = accountMetrics.activityStates.reduce((acc, curr) => acc + curr.value, 0);
-                            const percent = ((payload[0].value / total) * 100).toFixed(0);
-                            return (
-                              <div className="bg-gray-950 dark:bg-gray-900 p-2.5 rounded-xl border border-gray-800 shadow-xl text-white text-xs font-sans">
-                                <span className="font-semibold block text-gray-400 mb-1">{payload[0].name}</span>
-                                <span className="font-bold text-sm text-white">{payload[0].value} {payload[0].value === 1 ? 'User' : 'Users'} ({percent}%)</span>
-                              </div>
-                            );
-                          }
-                          return null;
-                        }}
-                      />
-                      <Legend 
-                        verticalAlign="middle" 
-                        align="right" 
-                        layout="vertical"
-                        iconType="circle"
-                        iconSize={8}
-                        wrapperStyle={{ fontSize: '11px', fontFamily: 'sans-serif', paddingLeft: '10px' }}
-                      />
-                    </PieChart>
-                  </ResponsiveContainer>
-                ) : (
-                  <span className="text-xs text-gray-400">No activity state records found</span>
-                )}
-              </div>
-            </div>
-
-          </div>
-
-          {/* Directory Diagnostics Table */}
-          <div className="bg-white dark:bg-gray-900 border border-gray-100 dark:border-gray-800 rounded-2xl shadow-sm overflow-hidden flex flex-col">
-            
-            <div className="p-5 border-b border-gray-100 dark:border-gray-800 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-              <div>
-                <h2 className="text-base font-bold text-gray-955 dark:text-white">IAM Roster & Integrity Audit</h2>
-                <p className="text-xs text-gray-500 mt-0.5">Comprehensive audit trail mapping user account age, active requests, and security flags.</p>
-              </div>
-
-              <div className="flex items-center gap-2">
-                <div className="relative">
-                  <Search className="absolute left-3.5 top-2.5 w-4 h-4 text-gray-400" />
-                  <input
-                    type="text"
-                    placeholder="Search users or anomalies..."
-                    value={accountsSearchQuery}
-                    onChange={(e) => setAccountsSearchQuery(e.target.value)}
-                    className="pl-10 pr-4 py-1.5 w-full sm:w-60 bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg text-xs text-gray-900 dark:text-white focus:outline-none focus:ring-1 focus:ring-blue-500"
-                  />
-                </div>
-              </div>
-            </div>
-
-            <div className="overflow-x-auto">
-              <table className="w-full text-left text-xs border-collapse font-sans">
-                <thead>
-                  <tr className="bg-gray-50 dark:bg-gray-800/40 text-gray-400 border-b border-gray-100 dark:border-gray-800 font-bold">
-                    <th className="p-4">Corporate User</th>
-                    <th className="p-4">Account Age</th>
-                    <th className="p-4">Last Activity</th>
-                    <th className="p-4">Activity Status</th>
-                    <th className="p-4">Requests Created</th>
-                    <th className="p-4">Security Diagnostic Flag</th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-gray-100 dark:divide-gray-800/60">
-                  {accountMetrics.users
-                    .filter(u => {
-                      const query = accountsSearchQuery.toLowerCase().trim();
-                      if (!query) return true;
-                      return u.fullName.toLowerCase().includes(query) ||
-                             u.email.toLowerCase().includes(query) ||
-                             u.anomalies.some(a => a.toLowerCase().includes(query));
-                    })
-                    .map(user => (
-                      <tr key={user.id} className="hover:bg-gray-50/40 dark:hover:bg-gray-800/5 transition-colors">
-                        <td className="p-4">
-                          <div className="flex items-center gap-2.5">
-                            <div className="w-8 h-8 rounded-full bg-blue-50 dark:bg-blue-950/20 text-blue-600 dark:text-blue-400 flex items-center justify-center font-bold">
-                              {user.fullName.split(' ').map(n=>n[0]).join('')}
-                            </div>
-                            <div>
-                              <div className="font-extrabold text-gray-900 dark:text-white">{user.fullName}</div>
-                              <div className="text-[11px] text-gray-400 font-mono">{user.email}</div>
-                            </div>
-                          </div>
-                        </td>
-                        <td className="p-4 text-gray-650 dark:text-gray-300 font-medium">
-                          <div className="flex items-center gap-1.5">
-                            <CalendarDays className="w-3.5 h-3.5 text-gray-400" />
-                            <span>{user.ageInDays === 0 ? 'New (< 24h)' : `${user.ageInDays} Days Old`}</span>
-                          </div>
-                        </td>
-                        <td className="p-4 text-gray-650 dark:text-gray-300 font-medium">
-                          {user.daysSinceLastActivity === null ? (
-                            <span className="text-gray-400 italic">Never</span>
-                          ) : user.daysSinceLastActivity === 0 ? (
-                            <span className="text-emerald-600 dark:text-emerald-400 font-bold">Today</span>
-                          ) : (
-                            <span>{user.daysSinceLastActivity} days ago</span>
-                          )}
-                        </td>
-                        <td className="p-4">
-                          <span className={`px-2.5 py-0.5 rounded-full text-[10px] font-black uppercase ${
-                            user.status === 'Deactivated'
-                              ? 'bg-red-50 text-red-650 border border-red-200'
-                              : user.activityStatus === 'Active'
-                              ? 'bg-emerald-50 text-emerald-700 dark:bg-emerald-950/20 dark:text-emerald-400'
-                              : user.activityStatus === 'Stale'
-                              ? 'bg-amber-50 text-amber-700 dark:bg-amber-950/20 dark:text-amber-400'
-                              : 'bg-red-50 text-red-700 dark:bg-red-950/20 dark:text-red-400'
-                          }`}>
-                            {user.status === 'Deactivated' ? 'Deactivated' : user.activityStatus}
-                          </span>
-                        </td>
-                        <td className="p-4 text-gray-900 dark:text-white font-mono font-bold">
-                          {user.userRequestsCount}
-                        </td>
-                        <td className="p-4">
-                          {user.isAnomalous ? (
-                            <div className="space-y-1 max-w-xs">
-                              {user.anomalies.map((anomaly, idx) => (
-                                <div key={idx} className="flex items-start gap-1 text-red-650 dark:text-red-400 text-[10px] leading-tight font-medium">
-                                  <AlertTriangle className="w-3.5 h-3.5 shrink-0 text-red-500 mt-0.5" />
-                                  <span>{anomaly}</span>
-                                </div>
-                              ))}
-                            </div>
-                          ) : (
-                            <div className="flex items-center gap-1 text-emerald-650 dark:text-emerald-400 font-semibold text-[10px]">
-                              <CheckCircle className="w-3.5 h-3.5" />
-                              <span>No issues found</span>
-                            </div>
-                          )}
-                        </td>
-                      </tr>
-                    ))}
-                </tbody>
-              </table>
-            </div>
+            ) : (
+              <span className="text-xs text-gray-400">No department request records found</span>
+            )}
           </div>
         </div>
-      )}
+
+        {/* Status Distribution */}
+        <div className="bg-white dark:bg-gray-900 border border-gray-100 dark:border-gray-800 p-6 rounded-2xl shadow-sm flex flex-col gap-4">
+          <div className="flex items-center gap-3 border-b border-gray-100 dark:border-gray-800 pb-4">
+            <div className="p-2.5 bg-emerald-50 dark:bg-emerald-950/40 text-emerald-600 dark:text-emerald-400 rounded-xl">
+              <TrendingUp className="w-5 h-5" />
+            </div>
+            <div>
+              <h3 className="text-sm font-bold text-gray-955 dark:text-white">Request Status Distribution</h3>
+              <p className="text-xs text-gray-400 mt-0.5">Real-time status breakdown across the authorization lifecycle.</p>
+            </div>
+          </div>
+
+          <div className="w-full h-[240px] flex items-center justify-center">
+            {statusData.length > 0 ? (
+              <ResponsiveContainer width="100%" height="100%">
+                <PieChart>
+                  <Pie
+                    data={statusData}
+                    cx="40%"
+                    cy="50%"
+                    innerRadius={55}
+                    outerRadius={80}
+                    paddingAngle={4}
+                    dataKey="value"
+                  >
+                    {statusData.map((entry, index) => (
+                      <Cell key={`cell-${index}`} fill={STATUS_COLORS[entry.name] || '#3b82f6'} />
+                    ))}
+                  </Pie>
+                  <Tooltip
+                    content={({ active, payload }: any) => {
+                      if (active && payload && payload.length) {
+                        const total = statusData.reduce((acc, curr) => acc + curr.value, 0);
+                        const percent = ((payload[0].value / total) * 100).toFixed(0);
+                        return (
+                          <div className="bg-gray-950 dark:bg-gray-900 p-2.5 rounded-xl border border-gray-800 shadow-xl text-white text-xs font-sans">
+                            <span className="font-semibold block text-gray-400 mb-1">{payload[0].name}</span>
+                            <span className="font-bold text-sm text-white">{payload[0].value} {payload[0].value === 1 ? 'Request' : 'Requests'} ({percent}%)</span>
+                          </div>
+                        );
+                      }
+                      return null;
+                    }}
+                  />
+                  <Legend 
+                    verticalAlign="middle" 
+                    align="right" 
+                    layout="vertical"
+                    iconType="circle"
+                    iconSize={8}
+                    wrapperStyle={{ fontSize: '11px', fontFamily: 'sans-serif', paddingLeft: '10px' }}
+                  />
+                </PieChart>
+              </ResponsiveContainer>
+            ) : (
+              <span className="text-xs text-gray-400">No status distribution records found</span>
+            )}
+          </div>
+        </div>
+
+      </div>
 
       {/* Admin Central Portal Panels */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">

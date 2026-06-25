@@ -9,7 +9,6 @@ interface ManagerDashboardProps {
   searchTerm?: string;
   onSearchChange?: (val: string) => void;
   onBulkWorkflowAction?: (requestIds: string[], action: 'Approve' | 'Reject', comments: string) => void;
-  managerDepartmentId?: string;
 }
 
 export default function ManagerDashboard({ 
@@ -17,8 +16,7 @@ export default function ManagerDashboard({
   onSelectRequest,
   searchTerm: externalSearchTerm,
   onSearchChange: externalOnSearchChange,
-  onBulkWorkflowAction,
-  managerDepartmentId
+  onBulkWorkflowAction
 }: ManagerDashboardProps) {
   const [localSearchTerm, setLocalSearchTerm] = useState('');
   const [priorityFilter, setPriorityFilter] = useState('All');
@@ -31,15 +29,10 @@ export default function ManagerDashboard({
   const searchTerm = externalSearchTerm !== undefined ? externalSearchTerm : localSearchTerm;
   const setSearchTerm = externalOnSearchChange !== undefined ? externalOnSearchChange : setLocalSearchTerm;
 
-  // Filter requests to only include the manager's department if specified
-  const departmentRequests = managerDepartmentId 
-    ? requests.filter(r => r.departmentId === managerDepartmentId)
-    : requests;
-
   // Requests that require Manager Review (Submitted or Under Review status)
-  const pendingApprovals = departmentRequests.filter(r => r.status === 'Submitted' || r.status === 'Under Review');
+  const pendingApprovals = requests.filter(r => r.status === 'Submitted' || r.status === 'Under Review');
   // Team requests includes everything that has progressed past Draft
-  const teamRequests = departmentRequests.filter(r => r.status !== 'Draft');
+  const teamRequests = requests.filter(r => r.status !== 'Draft');
 
   // Stats
   const totalTeamRequests = teamRequests.length;

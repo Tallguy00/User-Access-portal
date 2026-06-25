@@ -12,8 +12,6 @@ interface HeaderProps {
   globalSearchTerm?: string;
   setGlobalSearchTerm?: (val: string) => void;
   onOpenProfile?: () => void;
-  onRefreshData?: () => void;
-  isRefreshing?: boolean;
 }
 
 export default function Header({
@@ -25,9 +23,7 @@ export default function Header({
   onMarkAllNotificationsAsRead,
   globalSearchTerm = '',
   setGlobalSearchTerm,
-  onOpenProfile,
-  onRefreshData,
-  isRefreshing = false
+  onOpenProfile
 }: HeaderProps) {
   const [showNotifications, setShowNotifications] = useState(false);
   const [showRoleSwitcher, setShowRoleSwitcher] = useState(false);
@@ -90,52 +86,14 @@ export default function Header({
 
       {/* Center simulation controller */}
       {currentUser && (
-        <div className="relative">
-          <button
-            type="button"
-            disabled
-            className="flex items-center gap-2 bg-gray-100 dark:bg-gray-800/50 border border-gray-200 dark:border-gray-700/80 px-3 py-1.5 rounded-xl text-xs opacity-60 cursor-not-allowed select-none"
-            title="Switch Persona Sandbox (Disabled)"
-          >
-            <span className="font-bold text-blue-700 dark:text-blue-400 flex items-center gap-1.5 select-none">
-              <Sparkles className="w-3.5 h-3.5 group-hover:rotate-12 transition-transform duration-300" />
-              <span className="hidden sm:inline">Active Persona Role:</span>
-            </span>
-            <span className="bg-blue-600/10 text-blue-750 dark:text-blue-300 font-extrabold uppercase text-[10px] tracking-wider px-2 py-0.5 rounded-md select-none">
-              {currentUser.role}
-            </span>
-            <span className="text-blue-550 dark:text-blue-400 text-[10px] ml-0.5 select-none">▼</span>
-          </button>
-          
-          {showRoleSwitcher && (
-            <>
-              {/* Overlay clickable backplate to dismiss dropdown */}
-              <div 
-                className="fixed inset-0 z-40 cursor-default" 
-                onClick={() => setShowRoleSwitcher(false)} 
-              />
-              <div id="role-switcher-dropdown" className="absolute left-0 mt-2.5 w-52 bg-white dark:bg-gray-950 border border-gray-200 dark:border-gray-800 rounded-2xl shadow-xl p-2 z-50 animate-fadeIn">
-                <div className="text-[9px] font-black uppercase text-gray-400 dark:text-gray-500 px-3 py-1.5 tracking-wider border-b border-gray-100 dark:border-gray-850/60 mb-1 select-none">
-                  Switch Sandbox Persona
-                </div>
-                {(['Admin', 'Employee (Requester)', 'Manager (Approver)', 'IT Support', 'Super Admin'] as UserRole[]).map((role) => (
-                  <button
-                    key={role}
-                    type="button"
-                    onClick={() => handleSwitch(role)}
-                    className={`w-full text-left px-3.5 py-2 text-xs rounded-xl transition-all cursor-pointer flex items-center justify-between ${
-                      currentUser.role === role
-                        ? 'bg-blue-50/70 text-blue-600 font-black dark:bg-blue-950/20 dark:text-blue-400'
-                        : 'text-gray-700 hover:bg-gray-50 hover:text-gray-900 dark:text-gray-300 dark:hover:bg-gray-900/60 dark:hover:text-white font-semibold'
-                    }`}
-                  >
-                    <span>{role}</span>
-                    {currentUser.role === role && <span className="text-blue-550 dark:text-blue-400 font-bold">✓</span>}
-                  </button>
-                ))}
-              </div>
-            </>
-          )}
+        <div className="hidden lg:flex items-center gap-2 bg-blue-500/10 dark:bg-blue-500/10 border border-blue-200/40 dark:border-blue-900/30 px-3.5 py-1.5 rounded-xl text-xs">
+          <span className="font-bold text-blue-700 dark:text-blue-400 flex items-center gap-1.5 select-none animate-pulse">
+            <Sparkles className="w-3.5 h-3.5" />
+            <span>Active Persona Role:</span>
+          </span>
+          <span className="bg-blue-600/10 text-blue-750 dark:text-blue-300 font-extrabold uppercase text-[10px] tracking-wider px-2 py-0.5 rounded-md select-none">
+            {currentUser.role}
+          </span>
         </div>
       )}
 
@@ -144,20 +102,10 @@ export default function Header({
         
         {currentUser && (
           <>
-
-            {onRefreshData && (
-              <button
-                type="button"
-                onClick={onRefreshData}
-                disabled={isRefreshing}
-                className={`p-2 text-gray-400 hover:text-blue-600 dark:hover:text-blue-400 hover:bg-gray-50 dark:hover:bg-gray-800 rounded-xl transition-all ${
-                  isRefreshing ? 'opacity-50 cursor-not-allowed' : ''
-                }`}
-                title="Synchronize data with Database"
-              >
-                <RefreshCw className={`w-4.5 h-4.5 ${isRefreshing ? 'animate-spin text-blue-600' : ''}`} />
-              </button>
-            )}
+            {/* Mobile / General static role display */}
+            <div className="lg:hidden p-1 px-2.5 border border-gray-250 dark:border-gray-800 text-gray-650 dark:text-gray-400 rounded-lg text-xs font-black uppercase tracking-wider bg-gray-50/50 dark:bg-gray-850/50 select-none">
+              {currentUser.role}
+            </div>
 
             {/* Notifications panel */}
             <div className="relative">

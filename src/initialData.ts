@@ -88,7 +88,7 @@ export const INITIAL_AUDIT_LOGS: AuditLog[] = [
   {
     id: 'log-001',
     userEmail: 'admin@company.com',
-    userRole: 'IT Support',
+    userRole: 'IT Admin',
     action: 'Grant Access',
     details: 'Completed access request req-003 and provisioned remote VPN profile.',
     createdAt: '2026-06-19T14:40:00Z',
@@ -98,7 +98,7 @@ export const INITIAL_AUDIT_LOGS: AuditLog[] = [
   {
     id: 'log-002',
     userEmail: 'manager.bob@company.com',
-    userRole: 'Manager (Approver)',
+    userRole: 'Manager',
     action: 'Approve Request',
     details: 'Approved quarterly audit folder access request for Mark Fletcher.',
     createdAt: '2026-06-18T16:22:00Z',
@@ -108,7 +108,7 @@ export const INITIAL_AUDIT_LOGS: AuditLog[] = [
   {
     id: 'log-003',
     userEmail: 'manager.bob@company.com',
-    userRole: 'Manager (Approver)',
+    userRole: 'Manager',
     action: 'Reject Request',
     details: 'Rejected PostgreSQL DB superuser root credentials request due to security compliance constraints.',
     createdAt: '2026-06-17T13:45:00Z',
@@ -118,7 +118,7 @@ export const INITIAL_AUDIT_LOGS: AuditLog[] = [
   {
     id: 'log-004',
     userEmail: 'employee.jane@company.com',
-    userRole: 'Employee (Requester)',
+    userRole: 'User',
     action: 'Submit Request',
     details: 'Created access request for AWS Production environment.',
     createdAt: '2026-06-19T10:30:00Z',

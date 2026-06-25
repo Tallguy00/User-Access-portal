@@ -1,37 +1,4 @@
-export type UserRole = 
-  | 'Admin' 
-  | 'Employee (Requester)' 
-  | 'Manager (Approver)' 
-  | 'IT Support' 
-  | 'Super Admin';
-
-export function mapUiToDbRole(uiRole: UserRole): 'User' | 'Manager' | 'IT Admin' | 'Super Admin' {
-  switch (uiRole) {
-    case 'Employee (Requester)': return 'User';
-    case 'Manager (Approver)': return 'Manager';
-    case 'IT Support': return 'IT Admin';
-    case 'Admin': return 'IT Admin';
-    case 'Super Admin': return 'Super Admin';
-    default: return 'User';
-  }
-}
-
-export function mapDbToUiRole(dbRole: string, email?: string, uiPrefRole?: string): UserRole {
-  if (uiPrefRole === 'Admin' || uiPrefRole === 'Employee (Requester)' || uiPrefRole === 'Manager (Approver)' || uiPrefRole === 'IT Support' || uiPrefRole === 'Super Admin') {
-    return uiPrefRole as UserRole;
-  }
-  switch (dbRole) {
-    case 'User': return 'Employee (Requester)';
-    case 'Manager': return 'Manager (Approver)';
-    case 'IT Admin': 
-      if (email?.toLowerCase().includes('admin')) {
-        return 'Admin';
-      }
-      return 'IT Support';
-    case 'Super Admin': return 'Super Admin';
-    default: return 'Employee (Requester)';
-  }
-}
+export type UserRole = 'User' | 'Manager' | 'IT Admin' | 'Super Admin';
 
 export type RequestStatus = 'Draft' | 'Submitted' | 'Under Review' | 'Approved' | 'Rejected' | 'Completed';
 
