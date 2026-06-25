@@ -120,12 +120,14 @@ export default function App() {
 
   // Automated pending SLA reminders (>48h)
   useEffect(() => {
-    const pendingReqs = requests.filter(req => req.status === 'Submitted' || req.status === 'Under Review');
+    const safeReqs = Array.isArray(requests) ? requests : [];
+    const pendingReqs = safeReqs.filter(req => req && (req.status === 'Submitted' || req.status === 'Under Review'));
     if (pendingReqs.length === 0) return;
 
     const now = new Date();
     const fortyEightHoursInMs = 48 * 60 * 60 * 1000;
-    const managers = profiles.filter(p => p.role === 'Manager');
+    const safeProfiles = Array.isArray(profiles) ? profiles : [];
+    const managers = safeProfiles.filter(p => p && p.role === 'Manager');
     if (managers.length === 0) return;
 
     setNotifications(prevNotifications => {

@@ -6,10 +6,15 @@
   --font-mono: "JetBrains Mono", ui-monospace, SFMono-Regular, monospace;
 }
 
-body, .dark body {
+body {
   font-family: var(--font-sans);
   background-color: #FFFFFF !important;
   color: #111827 !important;
+}
+
+.dark body {
+  background-color: #030712 !important;
+  color: #F9FAFB !important;
 }
 
 /* Custom scrollbars for details panels */

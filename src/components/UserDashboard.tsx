@@ -29,13 +29,16 @@ export default function UserDashboard({
   const searchTerm = externalSearchTerm !== undefined ? externalSearchTerm : localSearchTerm;
   const setSearchTerm = externalOnSearchChange !== undefined ? externalOnSearchChange : setLocalSearchTerm;
 
-  // Filter requests for currently logged in user
-  const userRequests = requests.filter(req => req.userEmail === userEmail);
-  const userLogs = auditLogs.filter(log => log.userEmail === userEmail);
+  const safeRequests = Array.isArray(requests) ? requests : [];
+  const safeAuditLogs = Array.isArray(auditLogs) ? auditLogs : [];
 
-  const activeCount = userRequests.filter(r => ['Submitted', 'Under Review', 'Approved'].includes(r.status)).length;
-  const approvedCount = userRequests.filter(r => r.status === 'Completed').length;
-  const rejectedCount = userRequests.filter(r => r.status === 'Rejected').length;
+  // Filter requests for currently logged in user
+  const userRequests = safeRequests.filter(req => req && req.userEmail === userEmail);
+  const userLogs = safeAuditLogs.filter(log => log && log.userEmail === userEmail);
+
+  const activeCount = userRequests.filter(r => r && ['Submitted', 'Under Review', 'Approved'].includes(r.status)).length;
+  const approvedCount = userRequests.filter(r => r && r.status === 'Completed').length;
+  const rejectedCount = userRequests.filter(r => r && r.status === 'Rejected').length;
 
   const filteredRequests = React.useMemo(() => {
     const filtered = userRequests.filter(req => {
