@@ -120,12 +120,14 @@ export default function App() {
 
   // Automated pending SLA reminders (>48h)
   useEffect(() => {
-    const pendingReqs = requests.filter(req => req.status === 'Submitted' || req.status === 'Under Review');
+    const safeReqs = Array.isArray(requests) ? requests : [];
+    const pendingReqs = safeReqs.filter(req => req && (req.status === 'Submitted' || req.status === 'Under Review'));
     if (pendingReqs.length === 0) return;
 
     const now = new Date();
     const fortyEightHoursInMs = 48 * 60 * 60 * 1000;
-    const managers = profiles.filter(p => p.role === 'Manager');
+    const safeProfiles = Array.isArray(profiles) ? profiles : [];
+    const managers = safeProfiles.filter(p => p && p.role === 'Manager');
     if (managers.length === 0) return;
 
     setNotifications(prevNotifications => {
@@ -292,6 +294,78 @@ export default function App() {
     };
     
     fetchRequestsFromDB();
+  }, [currentUser]);
+
+  // Load real audit logs from Supabase DB on user sign-in/mount
+  useEffect(() => {
+    const fetchAuditLogsFromDB = async () => {
+      if (!currentUser) return;
+      try {
+        const { data, error } = await supabase
+          .from('audit_logs')
+          .select('*')
+          .order('created_at', { ascending: false });
+          
+        if (error) {
+          console.error("Error fetching audit logs from Supabase DB:", error);
+          return;
+        }
+        
+        if (data && data.length > 0) {
+          const mappedLogs: AuditLog[] = data.map(item => ({
+            id: item.id,
+            userEmail: item.user_email,
+            userRole: item.user_role as any,
+            action: item.action,
+            details: item.details,
+            createdAt: item.created_at,
+            ipAddress: item.ip_address || undefined,
+            device: item.device || undefined
+          }));
+          
+          setAuditLogs(mappedLogs);
+        }
+      } catch (err) {
+        console.error("Failed to load audit logs from DB:", err);
+      }
+    };
+    
+    fetchAuditLogsFromDB();
+  }, [currentUser]);
+
+  // Load real notifications from Supabase DB on user sign-in/mount
+  useEffect(() => {
+    const fetchNotificationsFromDB = async () => {
+      if (!currentUser) return;
+      try {
+        const { data, error } = await supabase
+          .from('notifications')
+          .select('*')
+          .order('created_at', { ascending: false });
+          
+        if (error) {
+          console.error("Error fetching notifications from Supabase DB:", error);
+          return;
+        }
+        
+        if (data && data.length > 0) {
+          const mappedNotifications: AppNotification[] = data.map(item => ({
+            id: item.id,
+            userEmail: item.user_email,
+            message: item.message,
+            isRead: item.is_read,
+            createdAt: item.created_at,
+            type: item.type as any
+          }));
+          
+          setNotifications(mappedNotifications);
+        }
+      } catch (err) {
+        console.error("Failed to load notifications from DB:", err);
+      }
+    };
+    
+    fetchNotificationsFromDB();
   }, [currentUser]);
 
   // Handle active session loading
@@ -474,7 +548,28 @@ export default function App() {
   };
 
   // Helper constructors
-  const logAuditEvent = (email: string, role: UserRole, action: string, details: string) => {
+  const logAuditEvent = async (email: string, role: UserRole, action: string, details: string) => {
+    const detectDevice = () => {
+      const ua = navigator.userAgent;
+      if (/android/i.test(ua)) {
+        return 'Android Mobile, Chrome';
+      }
+      if (/iPad|iPhone|iPod/.test(ua)) {
+        return 'iOS Mobile, Safari';
+      }
+      if (/Windows/i.test(ua)) {
+        return 'PC (Windows), Chrome/Edge';
+      }
+      if (/Macintosh/i.test(ua)) {
+        return 'Macintosh (MacOS), Safari/Chrome';
+      }
+      if (/Linux/i.test(ua)) {
+        return 'PC (Linux), Chrome';
+      }
+      return 'Web Browser, Portal Gateway';
+    };
+
+    const deviceName = detectDevice();
     const newLog: AuditLog = {
       id: 'log-' + Math.random().toString(36).substr(2, 9),
       userEmail: email,
@@ -483,12 +578,28 @@ export default function App() {
       details,
       createdAt: new Date().toISOString(),
       ipAddress: '159.20.104.' + Math.floor(Math.random() * 254),
-      device: 'MacBook Air M3, Safari MacOS'
+      device: deviceName
     };
+    
     setAuditLogs(prev => [newLog, ...prev]);
+
+    try {
+      await supabase.from('audit_logs').insert({
+        id: newLog.id,
+        user_email: newLog.userEmail,
+        user_role: newLog.userRole,
+        action: newLog.action,
+        details: newLog.details,
+        created_at: newLog.createdAt,
+        ip_address: newLog.ipAddress,
+        device: newLog.device
+      });
+    } catch (err) {
+      console.error("Failed to sync audit log to Supabase:", err);
+    }
   };
 
-  const addNotification = (email: string, message: string, type: AppNotification['type']) => {
+  const addNotification = async (email: string, message: string, type: AppNotification['type']) => {
     const newNotice: AppNotification = {
       id: 'notice-' + Math.random().toString(36).substr(2, 9),
       userEmail: email,
@@ -497,7 +608,21 @@ export default function App() {
       createdAt: new Date().toISOString(),
       type
     };
+    
     setNotifications(prev => [newNotice, ...prev]);
+
+    try {
+      await supabase.from('notifications').insert({
+        id: newNotice.id,
+        user_email: newNotice.userEmail,
+        message: newNotice.message,
+        is_read: newNotice.isRead,
+        created_at: newNotice.createdAt,
+        type: newNotice.type
+      });
+    } catch (err) {
+      console.error("Failed to sync notification to Supabase:", err);
+    }
   };
 
   // Request handlers
@@ -939,13 +1064,29 @@ export default function App() {
   };
 
   // Notification mark as reads
-  const handleMarkAsRead = (id: string) => {
+  const handleMarkAsRead = async (id: string) => {
     setNotifications(prev => prev.map(n => n.id === id ? { ...n, isRead: true } : n));
+    try {
+      await supabase
+        .from('notifications')
+        .update({ is_read: true })
+        .eq('id', id);
+    } catch (err) {
+      console.error("Failed to update notification in Supabase:", err);
+    }
   };
 
-  const handleMarkAllAsRead = () => {
+  const handleMarkAllAsRead = async () => {
     if (!currentUser) return;
     setNotifications(prev => prev.map(n => n.userEmail === currentUser.email ? { ...n, isRead: true } : n));
+    try {
+      await supabase
+        .from('notifications')
+        .update({ is_read: true })
+        .eq('user_email', currentUser.email);
+    } catch (err) {
+      console.error("Failed to update all notifications in Supabase:", err);
+    }
   };
 
   // Navigation tabs list depending on user level roles

@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { AuditLog } from '../types';
-import { ShieldCheck, Search, Filter, Monitor, Globe, Laptop, Key, RefreshCw } from 'lucide-react';
+import { ShieldCheck, Search, Filter, Monitor, Globe, Laptop, Smartphone, Key, RefreshCw } from 'lucide-react';
 
 interface AuditLogViewProps {
   auditLogs: AuditLog[];
@@ -133,7 +133,11 @@ export default function AuditLogView({ auditLogs }: AuditLogViewProps) {
                         <span className="font-medium text-gray-700 dark:text-gray-300">{log.ipAddress}</span>
                       </div>
                       <div className="flex items-center gap-1.5 mt-1 text-[10px] truncate max-w-[150px]">
-                        <Laptop className="w-3 h-3 text-gray-400 shrink-0" />
+                        {log.device?.toLowerCase().includes('mobile') || log.device?.toLowerCase().includes('android') || log.device?.toLowerCase().includes('ios') ? (
+                          <Smartphone className="w-3 h-3 text-emerald-500 shrink-0" />
+                        ) : (
+                          <Laptop className="w-3 h-3 text-blue-500 shrink-0" />
+                        )}
                         <span className="truncate">{log.device}</span>
                       </div>
                     </td>
