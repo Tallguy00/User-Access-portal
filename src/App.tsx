@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { supabase } from './supabaseClient';
 import { 
   UserProfile, 
@@ -263,52 +263,56 @@ export default function App() {
   }, [sessionUserEmail]);
 
   // Load real access requests from Supabase DB on user sign-in/mount
-  useEffect(() => {
-    const fetchRequestsFromDB = async () => {
-      if (!currentUser) return;
-      try {
-        const { data, error } = await supabase
-          .from('access_requests')
-          .select('*')
-          .order('created_at', { ascending: false });
-          
-        if (error) {
-          console.error("Error fetching requests from Supabase DB:", error);
-          return;
-        }
+  const fetchRequestsFromDB = useCallback(async () => {
+    if (!currentUser) return;
+    try {
+      const { data, error } = await supabase
+        .from('access_requests')
+        .select('*')
+        .order('created_at', { ascending: false });
         
-        if (data && data.length > 0) {
-          // Map snake_case columns back to camelCase models
-          const mappedRequests: AccessRequest[] = data.map(item => ({
-            id: item.id,
-            userId: item.user_id,
-            userEmail: item.user_email,
-            userFullName: item.user_full_name,
-            departmentId: item.department_id || '',
-            title: item.title,
-            accessType: item.access_type as any,
-            systemName: item.system_name,
-            justification: item.justification,
-            priority: item.priority as any,
-            startDate: item.start_date,
-            endDate: item.end_date || undefined,
-            status: item.status as any,
-            createdAt: item.created_at,
-            attachments: item.attachments || [],
-            comments: item.comments || undefined,
-            commentsHistory: item.comments_history || [],
-            provisionedCredentials: item.provisioned_credentials || undefined
-          }));
-          
-          setRequests(mappedRequests);
-        }
-      } catch (err) {
-        console.error("Failed to load requests from DB:", err);
+      if (error) {
+        console.error("Error fetching requests from Supabase DB:", error);
+        return;
       }
-    };
-    
-    fetchRequestsFromDB();
+      
+      if (data && data.length > 0) {
+        // Map snake_case columns back to camelCase models
+        const mappedRequests: AccessRequest[] = data.map(item => ({
+          id: item.id,
+          userId: item.user_id,
+          userEmail: item.user_email,
+          userFullName: item.user_full_name,
+          departmentId: item.department_id || '',
+          title: item.title,
+          accessType: item.access_type as any,
+          systemName: item.system_name,
+          justification: item.justification,
+          priority: item.priority as any,
+          startDate: item.start_date,
+          endDate: item.end_date || undefined,
+          status: item.status as any,
+          createdAt: item.created_at,
+          attachments: item.attachments || [],
+          comments: item.comments || undefined,
+          commentsHistory: item.comments_history || [],
+          provisionedCredentials: item.provisioned_credentials || undefined,
+          requestedRole: item.requested_role || undefined,
+          manager: item.manager || undefined,
+          currentApprover: item.current_approver || undefined,
+          updatedAt: item.updated_at || undefined
+        }));
+        
+        setRequests(mappedRequests);
+      }
+    } catch (err) {
+      console.error("Failed to load requests from DB:", err);
+    }
   }, [currentUser]);
+
+  useEffect(() => {
+    fetchRequestsFromDB();
+  }, [fetchRequestsFromDB]);
 
   // Load real audit logs from Supabase DB on user sign-in/mount
   useEffect(() => {
@@ -647,13 +651,22 @@ export default function App() {
 
     const createdAt = new Date().toISOString();
     const reqId = newReq.id || ('req-' + (typeof crypto !== 'undefined' && typeof crypto.randomUUID === 'function' ? crypto.randomUUID() : Math.random().toString(36).substring(2, 15)));
+    
+    // Map accessType from UI ('New', 'Modify', 'Remove') to DB and Reporting compliant values
+    const mappedAccessType = 
+      newReq.accessType === 'New' ? 'Application Access' :
+      newReq.accessType === 'Modify' ? 'Database Access' :
+      newReq.accessType === 'Remove' ? 'Server Access' :
+      newReq.accessType;
+
     const requestObj: AccessRequest = {
       ...newReq,
       id: reqId,
       userId: currentUser.id,
       userFullName: currentUser.fullName,
       userEmail: currentUser.email,
-      status: 'Pending',
+      status: 'Submitted', // 'Submitted' is DB compliant and triggers Manager Dashboard pending lists correctly
+      accessType: mappedAccessType as any,
       createdAt,
       updatedAt: createdAt,
       commentsHistory: [
@@ -675,6 +688,11 @@ export default function App() {
         throw new Error("No authenticated session found. Please sign in again.");
       }
 
+      // Ensure user can only create requests associated with their authenticated account
+      if (user.id !== currentUser.id) {
+        throw new Error("Unauthorized request submission. Authenticated user ID mismatch.");
+      }
+
       const { error } = await supabase.from('access_requests').insert({
         id: reqId,
         user_id: user.id,
@@ -682,13 +700,13 @@ export default function App() {
         user_full_name: currentUser.fullName,
         department_id: newReq.departmentId,
         title: newReq.title,
-        access_type: newReq.accessType,
+        access_type: mappedAccessType,
         system_name: newReq.systemName,
         justification: newReq.justification,
         priority: newReq.priority,
         start_date: newReq.startDate,
         end_date: newReq.endDate || null,
-        status: 'Pending',
+        status: 'Submitted',
         created_at: createdAt,
         updated_at: createdAt,
         requested_role: newReq.requestedRole || null,
@@ -702,14 +720,14 @@ export default function App() {
 
       if (error) {
         console.error("Error inserting request into Supabase DB:", error);
-        if (error.message && (error.message.includes("column") || error.message.includes("constraint"))) {
-          throw new Error(`Database schema needs updating. Please make sure the required SQL schema changes have been executed in your Supabase SQL editor. Details: ${error.message}`);
-        }
         throw new Error(error.message || "Failed to insert request into Supabase database.");
       }
 
-      // Success! Update local state
+      // Success! Update local state immediately for instant feedback
       setRequests(prev => [requestObj, ...prev]);
+
+      // Refresh list from DB in background to guarantee full server sync
+      fetchRequestsFromDB();
 
       // Send notification
       addNotification(
