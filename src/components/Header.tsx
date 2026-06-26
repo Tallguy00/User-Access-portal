@@ -18,13 +18,14 @@ export default function Header({
   currentUser,
   onLogout,
   onSwitchRole,
-  notifications,
+  notifications: rawNotifications,
   onMarkNotificationAsRead,
   onMarkAllNotificationsAsRead,
   globalSearchTerm = '',
   setGlobalSearchTerm,
   onOpenProfile
 }: HeaderProps) {
+  const notifications = Array.isArray(rawNotifications) ? rawNotifications.filter(Boolean) : [];
   const [showNotifications, setShowNotifications] = useState(false);
   const [showRoleSwitcher, setShowRoleSwitcher] = useState(false);
 

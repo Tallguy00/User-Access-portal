@@ -8,7 +8,9 @@ interface ReportingModuleProps {
   departments: Department[];
 }
 
-export default function ReportingModule({ requests, departments }: ReportingModuleProps) {
+export default function ReportingModule({ requests: rawRequests, departments: rawDepartments }: ReportingModuleProps) {
+  const requests = Array.isArray(rawRequests) ? rawRequests.filter(Boolean) : [];
+  const departments = Array.isArray(rawDepartments) ? rawDepartments.filter(Boolean) : [];
   const [exportingType, setExportingType] = useState<string | null>(null);
 
   // Group requests by department

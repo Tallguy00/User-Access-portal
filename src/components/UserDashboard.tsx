@@ -14,14 +14,16 @@ interface UserDashboardProps {
 }
 
 export default function UserDashboard({ 
-  requests, 
+  requests: rawRequests, 
   userEmail, 
   onOpenCreateModal, 
   onSelectRequest, 
-  auditLogs,
+  auditLogs: rawAuditLogs,
   searchTerm: externalSearchTerm,
   onSearchChange: externalOnSearchChange
 }: UserDashboardProps) {
+  const requests = Array.isArray(rawRequests) ? rawRequests.filter(Boolean) : [];
+  const auditLogs = Array.isArray(rawAuditLogs) ? rawAuditLogs.filter(Boolean) : [];
   const [localSearchTerm, setLocalSearchTerm] = useState('');
   const [statusFilter, setStatusFilter] = useState<string>('All');
   const [sortBy, setSortBy] = useState<string>('date-desc');
@@ -29,16 +31,13 @@ export default function UserDashboard({
   const searchTerm = externalSearchTerm !== undefined ? externalSearchTerm : localSearchTerm;
   const setSearchTerm = externalOnSearchChange !== undefined ? externalOnSearchChange : setLocalSearchTerm;
 
-  const safeRequests = Array.isArray(requests) ? requests : [];
-  const safeAuditLogs = Array.isArray(auditLogs) ? auditLogs : [];
-
   // Filter requests for currently logged in user
-  const userRequests = safeRequests.filter(req => req && req.userEmail === userEmail);
-  const userLogs = safeAuditLogs.filter(log => log && log.userEmail === userEmail);
+  const userRequests = requests.filter(req => req.userEmail === userEmail);
+  const userLogs = auditLogs.filter(log => log.userEmail === userEmail);
 
-  const activeCount = userRequests.filter(r => r && ['Submitted', 'Under Review', 'Approved'].includes(r.status)).length;
-  const approvedCount = userRequests.filter(r => r && r.status === 'Completed').length;
-  const rejectedCount = userRequests.filter(r => r && r.status === 'Rejected').length;
+  const activeCount = userRequests.filter(r => ['Submitted', 'Under Review', 'Approved'].includes(r.status)).length;
+  const approvedCount = userRequests.filter(r => r.status === 'Completed').length;
+  const rejectedCount = userRequests.filter(r => r.status === 'Rejected').length;
 
   const filteredRequests = React.useMemo(() => {
     const filtered = userRequests.filter(req => {
@@ -101,6 +100,7 @@ export default function UserDashboard({
       case 'Approved': return 'badge-approved';
       case 'Rejected': return 'badge-rejected';
       case 'Completed': return 'badge-approved';
+      case 'Pending': return 'badge-pending';
       default: return 'badge-review';
     }
   };

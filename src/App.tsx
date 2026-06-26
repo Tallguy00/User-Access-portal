@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { supabase } from './supabaseClient';
 import { 
   UserProfile, 
@@ -32,7 +32,7 @@ import CreateRequestModal from './components/CreateRequestModal';
 import RequestDetailsModal from './components/RequestDetailsModal';
 import UserProfileModal from './components/UserProfileModal';
 
-import { ShieldCheck, Users, LayoutDashboard, FileBarChart, History, Settings, Sun, Moon } from 'lucide-react';
+import { ShieldCheck, Users, LayoutDashboard, FileBarChart, History, Settings, Sun, Moon, CheckCircle2, AlertCircle } from 'lucide-react';
 
 export default function App() {
   // Theme state
@@ -90,6 +90,20 @@ export default function App() {
   const [isCreateRequestOpen, setIsCreateRequestOpen] = useState(false);
   const [selectedRequest, setSelectedRequest] = useState<AccessRequest | null>(null);
   const [isProfileOpen, setIsProfileOpen] = useState(false);
+  const [toast, setToast] = useState<{ message: string; type: 'success' | 'error' | 'info' } | null>(null);
+
+  const showToast = (message: string, type: 'success' | 'error' | 'info' = 'success') => {
+    setToast({ message, type });
+  };
+
+  useEffect(() => {
+    if (toast) {
+      const timer = setTimeout(() => {
+        setToast(null);
+      }, 4000);
+      return () => clearTimeout(timer);
+    }
+  }, [toast]);
 
   // Sync state to local storage on changes
   useEffect(() => {
@@ -120,14 +134,14 @@ export default function App() {
 
   // Automated pending SLA reminders (>48h)
   useEffect(() => {
-    const safeReqs = Array.isArray(requests) ? requests : [];
-    const pendingReqs = safeReqs.filter(req => req && (req.status === 'Submitted' || req.status === 'Under Review'));
+    const safeRequests = Array.isArray(requests) ? requests.filter(Boolean) : [];
+    const pendingReqs = safeRequests.filter(req => req.status === 'Submitted' || req.status === 'Under Review');
     if (pendingReqs.length === 0) return;
 
     const now = new Date();
     const fortyEightHoursInMs = 48 * 60 * 60 * 1000;
-    const safeProfiles = Array.isArray(profiles) ? profiles : [];
-    const managers = safeProfiles.filter(p => p && p.role === 'Manager');
+    const safeProfiles = Array.isArray(profiles) ? profiles.filter(Boolean) : [];
+    const managers = safeProfiles.filter(p => p.role === 'Manager');
     if (managers.length === 0) return;
 
     setNotifications(prevNotifications => {
@@ -249,52 +263,75 @@ export default function App() {
   }, [sessionUserEmail]);
 
   // Load real access requests from Supabase DB on user sign-in/mount
-  useEffect(() => {
-    const fetchRequestsFromDB = async () => {
-      if (!currentUser) return;
-      try {
-        const { data, error } = await supabase
-          .from('access_requests')
-          .select('*')
-          .order('created_at', { ascending: false });
-          
-        if (error) {
-          console.error("Error fetching requests from Supabase DB:", error);
-          return;
-        }
+  const fetchRequestsFromDB = useCallback(async () => {
+    if (!currentUser) return;
+    try {
+      const { data, error } = await supabase
+        .from('access_requests')
+        .select('*')
+        .order('created_at', { ascending: false });
         
-        if (data && data.length > 0) {
-          // Map snake_case columns back to camelCase models
-          const mappedRequests: AccessRequest[] = data.map(item => ({
-            id: item.id,
-            userId: item.user_id,
-            userEmail: item.user_email,
-            userFullName: item.user_full_name,
-            departmentId: item.department_id || '',
-            title: item.title,
-            accessType: item.access_type as any,
-            systemName: item.system_name,
-            justification: item.justification,
-            priority: item.priority as any,
-            startDate: item.start_date,
-            endDate: item.end_date || undefined,
-            status: item.status as any,
-            createdAt: item.created_at,
-            attachments: item.attachments || [],
-            comments: item.comments || undefined,
-            commentsHistory: item.comments_history || [],
-            provisionedCredentials: item.provisioned_credentials || undefined
-          }));
-          
-          setRequests(mappedRequests);
-        }
-      } catch (err) {
-        console.error("Failed to load requests from DB:", err);
+      if (error) {
+        console.error("Error fetching requests from Supabase DB:", error);
+        return;
       }
-    };
-    
-    fetchRequestsFromDB();
+      
+      if (data && data.length > 0) {
+        // Map snake_case columns back to camelCase models
+        const mappedRequests: AccessRequest[] = data.map(item => ({
+          id: item.id,
+          userId: item.user_id,
+          userEmail: item.user_email,
+          userFullName: item.user_full_name,
+          departmentId: item.department_id || '',
+          title: item.title,
+          accessType: item.access_type as any,
+          systemName: item.system_name,
+          justification: item.justification,
+          priority: item.priority as any,
+          startDate: item.start_date,
+          endDate: item.end_date || undefined,
+          status: item.status as any,
+          createdAt: item.created_at,
+          attachments: item.attachments || [],
+          comments: item.comments || undefined,
+          commentsHistory: item.comments_history || [],
+          provisionedCredentials: item.provisioned_credentials || undefined,
+          requestedRole: item.requested_role || undefined,
+          manager: item.manager || undefined,
+          currentApprover: item.current_approver || undefined,
+          updatedAt: item.updated_at || undefined
+        }));
+        
+        setRequests(mappedRequests);
+      }
+    } catch (err) {
+      console.error("Failed to load requests from DB:", err);
+    }
   }, [currentUser]);
+
+  useEffect(() => {
+    fetchRequestsFromDB();
+
+    if (!currentUser) return;
+
+    // Real-time Supabase subscription to automatically refresh the user's requests list
+    const channel = supabase
+      .channel('realtime:access_requests')
+      .on(
+        'postgres_changes',
+        { event: '*', schema: 'public', table: 'access_requests' },
+        (payload) => {
+          console.log('Real-time database update detected:', payload);
+          fetchRequestsFromDB();
+        }
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, [fetchRequestsFromDB, currentUser]);
 
   // Load real audit logs from Supabase DB on user sign-in/mount
   useEffect(() => {
@@ -372,7 +409,8 @@ export default function App() {
   useEffect(() => {
     if (sessionUserEmail) {
       const trimKey = sessionUserEmail.toLowerCase().trim();
-      const foundProfile = profiles.find(p => 
+      const safeProfiles = Array.isArray(profiles) ? profiles.filter(Boolean) : [];
+      const foundProfile = safeProfiles.find(p => 
         p.email.toLowerCase().trim() === trimKey
       );
       if (foundProfile) {
@@ -414,7 +452,8 @@ export default function App() {
     setActiveTab('dashboard');
 
     // Detect role for log context mapping
-    const foundProfile = profiles.find(p => p.email.toLowerCase() === authenticatedEmail.toLowerCase());
+    const safeProfiles = Array.isArray(profiles) ? profiles.filter(Boolean) : [];
+    const foundProfile = safeProfiles.find(p => p.email.toLowerCase() === authenticatedEmail.toLowerCase());
     const matchedRole = foundProfile?.role || 'User';
 
     // Create Audit entry for login
@@ -630,15 +669,25 @@ export default function App() {
     if (!currentUser) return;
 
     const createdAt = new Date().toISOString();
-    const reqId = newReq.id || ('req-' + Math.floor(100 + Math.random() * 900));
+    const reqId = newReq.id || ('req-' + (typeof crypto !== 'undefined' && typeof crypto.randomUUID === 'function' ? crypto.randomUUID() : Math.random().toString(36).substring(2, 15)));
+    
+    // Map accessType from UI ('New', 'Modify', 'Remove') to DB and Reporting compliant values
+    const mappedAccessType = 
+      newReq.accessType === 'New' ? 'Application Access' :
+      newReq.accessType === 'Modify' ? 'Database Access' :
+      newReq.accessType === 'Remove' ? 'Server Access' :
+      newReq.accessType;
+
     const requestObj: AccessRequest = {
       ...newReq,
       id: reqId,
       userId: currentUser.id,
       userFullName: currentUser.fullName,
       userEmail: currentUser.email,
-      status: 'Submitted',
+      status: 'Submitted', // 'Submitted' is DB compliant and triggers Manager Dashboard pending lists correctly
+      accessType: mappedAccessType as any,
       createdAt,
+      updatedAt: createdAt,
       commentsHistory: [
         {
           id: 'comment-initial-' + Math.random().toString(36).substring(2, 9),
@@ -651,53 +700,75 @@ export default function App() {
       ]
     };
 
-    setRequests(prev => [requestObj, ...prev]);
-
-    // Send notifications to operator
-    addNotification(
-      currentUser.email,
-      `Your request "${newReq.title}" for ${newReq.systemName} has been submitted for manager approval.`,
-      'submitted'
-    );
-
-    // Audit trace
-    logAuditEvent(
-      currentUser.email,
-      currentUser.role,
-      'Submit Request',
-      `Sourced access request ${reqId} for "${newReq.systemName}" prioritizing "${newReq.priority}".`
-    );
-
     // Persist request directly to the Supabase Database table
     try {
       const { data: { user } } = await supabase.auth.getUser();
-      if (user) {
-        const { error } = await supabase.from('access_requests').insert({
-          id: reqId,
-          user_id: user.id,
-          user_email: currentUser.email,
-          user_full_name: currentUser.fullName,
-          department_id: newReq.departmentId,
-          title: newReq.title,
-          access_type: newReq.accessType,
-          system_name: newReq.systemName,
-          justification: newReq.justification,
-          priority: newReq.priority,
-          start_date: newReq.startDate,
-          end_date: newReq.endDate || null,
-          status: 'Submitted',
-          created_at: createdAt,
-          attachments: newReq.attachments || [],
-          comments: newReq.comments || null,
-          comments_history: requestObj.commentsHistory,
-          provisioned_credentials: null
-        });
-        if (error) {
-          console.error("Error inserting request into Supabase DB:", error);
-        }
+      if (!user) {
+        throw new Error("No authenticated session found. Please sign in again.");
       }
-    } catch (err) {
+
+      // Ensure user can only create requests associated with their authenticated account
+      if (user.id !== currentUser.id) {
+        throw new Error("Unauthorized request submission. Authenticated user ID mismatch.");
+      }
+
+      const { error } = await supabase.from('access_requests').insert({
+        id: reqId,
+        user_id: user.id,
+        user_email: currentUser.email,
+        user_full_name: currentUser.fullName,
+        department_id: newReq.departmentId,
+        title: newReq.title,
+        access_type: mappedAccessType,
+        system_name: newReq.systemName,
+        justification: newReq.justification,
+        priority: newReq.priority,
+        start_date: newReq.startDate,
+        end_date: newReq.endDate || null,
+        status: 'Submitted',
+        created_at: createdAt,
+        updated_at: createdAt,
+        requested_role: newReq.requestedRole || null,
+        manager: newReq.manager || null,
+        current_approver: newReq.manager || null,
+        attachments: newReq.attachments || [],
+        comments: newReq.comments || null,
+        comments_history: requestObj.commentsHistory,
+        provisioned_credentials: null
+      });
+
+      if (error) {
+        console.error("Error inserting request into Supabase DB:", error);
+        throw new Error(error.message || "Failed to insert request into Supabase database.");
+      }
+
+      // Success! Update local state immediately for instant feedback
+      setRequests(prev => [requestObj, ...prev]);
+
+      // Refresh list from DB in background to guarantee full server sync
+      fetchRequestsFromDB();
+
+      // Send notification
+      addNotification(
+        currentUser.email,
+        `Your request "${newReq.title}" for ${newReq.systemName} has been submitted for approval.`,
+        'submitted'
+      );
+
+      // Audit trace
+      logAuditEvent(
+        currentUser.email,
+        currentUser.role,
+        'Submit Request',
+        `Sourced access request ${reqId} for "${newReq.systemName}" prioritizing "${newReq.priority}".`
+      );
+
+      showToast("Access request created successfully!", "success");
+
+    } catch (err: any) {
       console.error("Supabase request insertion exception:", err);
+      showToast(err.message || "Failed to submit request.", "error");
+      throw err;
     }
   };
 
@@ -722,7 +793,7 @@ export default function App() {
       let nextStatus: RequestStatus = req.status;
       let notificationType: AppNotification['type'] = 'info_requested';
 
-      if (currentUser.role === 'Manager' || currentUser.role === 'Super Admin') {
+      if (currentUser.role === 'Manager' || currentUser.role === 'Department Manager' || currentUser.role === 'Super Admin') {
         if (action === 'Approve') {
           nextStatus = 'Approved';
           notificationType = 'approved';
@@ -733,7 +804,7 @@ export default function App() {
           nextStatus = 'Under Review';
           notificationType = 'info_requested';
         }
-      } else if (currentUser.role === 'IT Admin') {
+      } else if (currentUser.role === 'IT Admin' || currentUser.role === 'IT Support') {
         // Complete workflow
         if (action === 'Approve') {
           nextStatus = 'Completed';
@@ -784,8 +855,8 @@ export default function App() {
         id: 'comment-' + Math.random().toString(36).substring(2, 9),
         authorName: currentUser.fullName,
         authorRole: currentUser.role,
-        action: currentUser.role === 'IT Admin' && action === 'Approve' ? 'Complete' : action,
-        text: comments || (currentUser.role === 'IT Admin' && action === 'Approve' ? 'Access provisioned and completed.' : `Workflow update [${action}]`),
+        action: (currentUser.role === 'IT Admin' || currentUser.role === 'IT Support') && action === 'Approve' ? 'Complete' : action,
+        text: comments || ((currentUser.role === 'IT Admin' || currentUser.role === 'IT Support') && action === 'Approve' ? 'Access provisioned and completed.' : `Workflow update [${action}]`),
         timestamp: new Date().toISOString()
       };
 
@@ -793,20 +864,80 @@ export default function App() {
       const finalComments = comments || undefined;
       const finalCredentials = provisionedCredentials || req.provisionedCredentials;
 
-      supabase
-        .from('access_requests')
-        .update({
-          status: nextStatus,
-          comments: finalComments || null,
-          comments_history: finalCommentsHistory,
-          provisioned_credentials: finalCredentials || null
-        })
-        .eq('id', req.id)
-        .then(({ error }) => {
-          if (error) {
-            console.error(`Error updating request ${req.id} in Supabase:`, error);
+      // Asynchronous database update with metadata columns, proper try/catch, and user ID retrieval
+      (async () => {
+        try {
+          const { data: { user } } = await supabase.auth.getUser();
+          if (!user) {
+            throw new Error("No authenticated session found. Please sign in again.");
           }
-        });
+
+          const currentTimestamp = new Date().toISOString();
+          const fullPayload: any = {
+            status: nextStatus,
+            comments: finalComments || null,
+            comments_history: finalCommentsHistory,
+            provisioned_credentials: finalCredentials || null,
+            updated_at: currentTimestamp
+          };
+
+          if (currentUser.role === 'Manager' || currentUser.role === 'Department Manager' || currentUser.role === 'Super Admin') {
+            if (action === 'Approve') {
+              fullPayload.approved_by = user.id;
+              fullPayload.approved_at = currentTimestamp;
+            } else if (action === 'Reject') {
+              fullPayload.rejected_by = user.id;
+              fullPayload.rejected_at = currentTimestamp;
+            }
+          }
+
+          const { error } = await supabase
+            .from('access_requests')
+            .update(fullPayload)
+            .eq('id', req.id);
+
+          if (error) {
+            // Fallback for missing table columns in development/preview schema
+            if (error.message && (error.message.includes("column") || error.message.includes("does not exist"))) {
+              console.warn("Table access_requests is missing approved_by/rejected_by metadata columns. Executing schema-agnostic update.");
+              
+              const fallbackPayload = {
+                status: nextStatus,
+                comments: finalComments || null,
+                comments_history: finalCommentsHistory,
+                provisioned_credentials: finalCredentials || null
+              };
+
+              const { error: fallbackError } = await supabase
+                .from('access_requests')
+                .update(fallbackPayload)
+                .eq('id', req.id);
+
+              if (fallbackError) {
+                throw fallbackError;
+              }
+            } else {
+              throw error;
+            }
+          }
+
+          // Output success toast notification
+          if (action === 'Approve') {
+            showToast("Request approved successfully!", "success");
+          } else if (action === 'Reject') {
+            showToast("Request rejected successfully!", "success");
+          } else {
+            showToast("Request updated successfully!", "success");
+          }
+
+          // Query invalidation: refresh requests list from database
+          fetchRequestsFromDB();
+
+        } catch (err: any) {
+          console.error(`Error in Supabase workflow action update for request ${req.id}:`, err);
+          showToast(err.message || "Failed to persist workflow updates in database.", "error");
+        }
+      })();
 
       return {
         ...req,
@@ -816,6 +947,53 @@ export default function App() {
         provisionedCredentials: finalCredentials
       };
     }));
+  };
+
+  const handleDeleteAttachment = async (requestId: string, attachmentIndex: number) => {
+    const req = requests.find(r => r.id === requestId);
+    if (!req || !req.attachments) return;
+
+    const attachment = req.attachments[attachmentIndex];
+    if (!attachment) return;
+
+    if (attachment.filePath) {
+      try {
+        const { error } = await supabase.storage
+          .from('app-files')
+          .remove([attachment.filePath]);
+        if (error) {
+          console.error("Failed to delete file from Supabase Storage:", error);
+        }
+      } catch (err) {
+        console.error("Error deleting file from Supabase Storage:", err);
+      }
+    }
+
+    const updatedAttachments = req.attachments.filter((_, idx) => idx !== attachmentIndex);
+    try {
+      const { error } = await supabase
+        .from('access_requests')
+        .update({ attachments: updatedAttachments })
+        .eq('id', requestId);
+
+      if (error) {
+        console.error("Failed to update attachments in Supabase DB:", error);
+        return;
+      }
+
+      setRequests(prev => prev.map(r => {
+        if (r.id === requestId) {
+          const updated = { ...r, attachments: updatedAttachments };
+          if (selectedRequest && selectedRequest.id === requestId) {
+            setSelectedRequest(updated);
+          }
+          return updated;
+        }
+        return r;
+      }));
+    } catch (err) {
+      console.error("Error updating attachments database reference:", err);
+    }
   };
 
   // Bulk Approver Action Matrix
@@ -828,7 +1006,7 @@ export default function App() {
       let nextStatus: RequestStatus = req.status;
       let notificationType: AppNotification['type'] = 'info_requested';
 
-      if (currentUser.role === 'Manager' || currentUser.role === 'Super Admin') {
+      if (currentUser.role === 'Manager' || currentUser.role === 'Department Manager' || currentUser.role === 'Super Admin') {
         if (action === 'Approve') {
           nextStatus = 'Approved';
           notificationType = 'approved';
@@ -1107,6 +1285,7 @@ export default function App() {
           />
         );
       case 'Manager':
+      case 'Department Manager':
         return (
           <ManagerDashboard
             requests={requests}
@@ -1116,6 +1295,7 @@ export default function App() {
             onBulkWorkflowAction={handleBulkWorkflowAction}
           />
         );
+      case 'IT Support':
       case 'IT Admin':
       case 'Super Admin':
         // Display full Admin dashboard view metrics
@@ -1128,6 +1308,23 @@ export default function App() {
             searchTerm={globalSearchTerm}
             onSearchChange={setGlobalSearchTerm}
           />
+        );
+      default:
+        return (
+          <div className="p-8 text-center bg-yellow-50 dark:bg-yellow-950/20 border border-yellow-200 dark:border-yellow-900/40 rounded-2xl max-w-xl mx-auto space-y-3">
+            <h3 className="text-sm font-bold text-yellow-800 dark:text-yellow-400">Unhandled Sandbox Role Context</h3>
+            <p className="text-xs text-yellow-700/85 dark:text-yellow-300/80 leading-relaxed">
+              Your identity directory profile is assigned the custom role <strong className="font-extrabold">"{currentUser.role}"</strong>, which does not map to a standard dashboard context.
+            </p>
+            <div className="pt-2">
+              <button
+                onClick={() => handleSwitchSandboxRole('User')}
+                className="px-4 py-2 bg-yellow-650 hover:bg-yellow-700 text-white font-bold text-xs rounded-xl transition-all shadow-sm"
+              >
+                Reset Session to Employee (User)
+              </button>
+            </div>
+          </div>
         );
     }
   };
@@ -1191,7 +1388,7 @@ export default function App() {
               </button>
 
               {/* Only show User Directory, Auditing, Reports for Admin contexts */}
-              {(currentUser?.role === 'IT Admin' || currentUser?.role === 'Super Admin') && (
+              {(currentUser?.role === 'IT Admin' || currentUser?.role === 'Super Admin' || currentUser?.role === 'IT Support') && (
                 <>
                   <button
                     onClick={() => setActiveTab('users')}
@@ -1306,6 +1503,7 @@ export default function App() {
         onSubmit={handleCreateRequestSubmit}
         departments={departments}
         systems={systems}
+        profiles={profiles}
       />
 
       <RequestDetailsModal
@@ -1317,6 +1515,7 @@ export default function App() {
         currentUserFullName={currentUser?.fullName || ''}
         onWorkflowAction={handleRequestWorkflowAction}
         departments={departments}
+        onDeleteAttachment={handleDeleteAttachment}
       />
 
       {currentUser && (
@@ -1328,6 +1527,27 @@ export default function App() {
           onSaveProfile={handleSaveProfile}
           profiles={profiles}
         />
+      )}
+
+      {/* Floating Toast Notification */}
+      {toast && (
+        <div 
+          id="toast-notification"
+          className={`fixed bottom-6 right-6 z-50 flex items-center gap-3 px-4 py-3 rounded-xl shadow-lg border animate-slide-in-right ${
+            toast.type === 'success' 
+              ? 'bg-emerald-50 dark:bg-emerald-950/40 border-emerald-200 dark:border-emerald-900/50 text-emerald-800 dark:text-emerald-300' 
+              : toast.type === 'error'
+              ? 'bg-rose-50 dark:bg-rose-950/40 border-rose-200 dark:border-rose-900/50 text-rose-800 dark:text-rose-300'
+              : 'bg-blue-50 dark:bg-blue-950/40 border-blue-200 dark:border-blue-900/50 text-blue-800 dark:text-blue-300'
+          }`}
+        >
+          {toast.type === 'success' ? (
+            <CheckCircle2 className="w-5 h-5 text-emerald-600 dark:text-emerald-450 shrink-0" />
+          ) : (
+            <AlertCircle className="w-5 h-5 text-rose-600 dark:text-rose-450 shrink-0" />
+          )}
+          <span className="text-sm font-medium">{toast.message}</span>
+        </div>
       )}
 
     </div>

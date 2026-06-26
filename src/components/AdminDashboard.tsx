@@ -14,13 +14,17 @@ interface AdminDashboardProps {
 }
 
 export default function AdminDashboard({ 
-  requests, 
-  profiles, 
-  departments,
+  requests: rawRequests, 
+  profiles: rawProfiles, 
+  departments: rawDepartments,
   onSelectRequest,
   searchTerm: externalSearchTerm,
   onSearchChange: externalOnSearchChange
 }: AdminDashboardProps) {
+  const requests = Array.isArray(rawRequests) ? rawRequests.filter(Boolean) : [];
+  const profiles = Array.isArray(rawProfiles) ? rawProfiles.filter(Boolean) : [];
+  const departments = Array.isArray(rawDepartments) ? rawDepartments.filter(Boolean) : [];
+
   const [localSearchTerm, setLocalSearchTerm] = useState('');
   const [sortBy, setSortBy] = useState<string>('date-desc');
 
