@@ -312,7 +312,26 @@ export default function App() {
 
   useEffect(() => {
     fetchRequestsFromDB();
-  }, [fetchRequestsFromDB]);
+
+    if (!currentUser) return;
+
+    // Real-time Supabase subscription to automatically refresh the user's requests list
+    const channel = supabase
+      .channel('realtime:access_requests')
+      .on(
+        'postgres_changes',
+        { event: '*', schema: 'public', table: 'access_requests' },
+        (payload) => {
+          console.log('Real-time database update detected:', payload);
+          fetchRequestsFromDB();
+        }
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, [fetchRequestsFromDB, currentUser]);
 
   // Load real audit logs from Supabase DB on user sign-in/mount
   useEffect(() => {
@@ -845,20 +864,80 @@ export default function App() {
       const finalComments = comments || undefined;
       const finalCredentials = provisionedCredentials || req.provisionedCredentials;
 
-      supabase
-        .from('access_requests')
-        .update({
-          status: nextStatus,
-          comments: finalComments || null,
-          comments_history: finalCommentsHistory,
-          provisioned_credentials: finalCredentials || null
-        })
-        .eq('id', req.id)
-        .then(({ error }) => {
-          if (error) {
-            console.error(`Error updating request ${req.id} in Supabase:`, error);
+      // Asynchronous database update with metadata columns, proper try/catch, and user ID retrieval
+      (async () => {
+        try {
+          const { data: { user } } = await supabase.auth.getUser();
+          if (!user) {
+            throw new Error("No authenticated session found. Please sign in again.");
           }
-        });
+
+          const currentTimestamp = new Date().toISOString();
+          const fullPayload: any = {
+            status: nextStatus,
+            comments: finalComments || null,
+            comments_history: finalCommentsHistory,
+            provisioned_credentials: finalCredentials || null,
+            updated_at: currentTimestamp
+          };
+
+          if (currentUser.role === 'Manager' || currentUser.role === 'Department Manager' || currentUser.role === 'Super Admin') {
+            if (action === 'Approve') {
+              fullPayload.approved_by = user.id;
+              fullPayload.approved_at = currentTimestamp;
+            } else if (action === 'Reject') {
+              fullPayload.rejected_by = user.id;
+              fullPayload.rejected_at = currentTimestamp;
+            }
+          }
+
+          const { error } = await supabase
+            .from('access_requests')
+            .update(fullPayload)
+            .eq('id', req.id);
+
+          if (error) {
+            // Fallback for missing table columns in development/preview schema
+            if (error.message && (error.message.includes("column") || error.message.includes("does not exist"))) {
+              console.warn("Table access_requests is missing approved_by/rejected_by metadata columns. Executing schema-agnostic update.");
+              
+              const fallbackPayload = {
+                status: nextStatus,
+                comments: finalComments || null,
+                comments_history: finalCommentsHistory,
+                provisioned_credentials: finalCredentials || null
+              };
+
+              const { error: fallbackError } = await supabase
+                .from('access_requests')
+                .update(fallbackPayload)
+                .eq('id', req.id);
+
+              if (fallbackError) {
+                throw fallbackError;
+              }
+            } else {
+              throw error;
+            }
+          }
+
+          // Output success toast notification
+          if (action === 'Approve') {
+            showToast("Request approved successfully!", "success");
+          } else if (action === 'Reject') {
+            showToast("Request rejected successfully!", "success");
+          } else {
+            showToast("Request updated successfully!", "success");
+          }
+
+          // Query invalidation: refresh requests list from database
+          fetchRequestsFromDB();
+
+        } catch (err: any) {
+          console.error(`Error in Supabase workflow action update for request ${req.id}:`, err);
+          showToast(err.message || "Failed to persist workflow updates in database.", "error");
+        }
+      })();
 
       return {
         ...req,

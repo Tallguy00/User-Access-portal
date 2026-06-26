@@ -100,6 +100,7 @@ export default function UserDashboard({
       case 'Approved': return 'badge-approved';
       case 'Rejected': return 'badge-rejected';
       case 'Completed': return 'badge-approved';
+      case 'Pending': return 'badge-pending';
       default: return 'badge-review';
     }
   };
