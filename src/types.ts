@@ -1,6 +1,6 @@
 export type UserRole = 'User' | 'Manager' | 'Department Manager' | 'IT Admin' | 'Super Admin' | 'IT Support';
 
-export type RequestStatus = 'Draft' | 'Submitted' | 'Under Review' | 'Approved' | 'Rejected' | 'Completed';
+export type RequestStatus = 'Draft' | 'Submitted' | 'Under Review' | 'Approved' | 'Rejected' | 'Completed' | 'Pending';
 
 export type PriorityLevel = 'Low' | 'Medium' | 'High' | 'Critical';
 
@@ -10,7 +10,10 @@ export type AccessType =
   | 'Folder Access' 
   | 'Email Group Access' 
   | 'VPN Access' 
-  | 'Server Access';
+  | 'Server Access'
+  | 'New'
+  | 'Modify'
+  | 'Remove';
 
 export interface NotificationPreferences {
   onSubmitted?: boolean;
@@ -62,6 +65,10 @@ export interface AccessRequest {
   endDate?: string;
   status: RequestStatus;
   createdAt: string;
+  requestedRole?: string;
+  manager?: string;
+  currentApprover?: string;
+  updatedAt?: string;
   attachments?: { name: string; size: string; previewUrl?: string; filePath?: string }[];
   comments?: string;
   commentsHistory?: RequestComment[];

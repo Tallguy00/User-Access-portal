@@ -1,5 +1,5 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { AccessRequest, AccessType, PriorityLevel, Department, SystemApplication } from '../types';
+import { AccessRequest, AccessType, PriorityLevel, Department, SystemApplication, UserProfile } from '../types';
 import { X, Upload, File, Plus, AlertCircle, Camera, Check, Sparkles, Loader2 } from 'lucide-react';
 import { supabase } from '../supabaseClient';
 
@@ -9,13 +9,17 @@ interface CreateRequestModalProps {
   onSubmit: (request: Omit<AccessRequest, 'userId' | 'userEmail' | 'userFullName' | 'createdAt' | 'status'> & { id?: string }) => void;
   departments: Department[];
   systems: SystemApplication[];
+  profiles: UserProfile[];
 }
 
-export default function CreateRequestModal({ isOpen, onClose, onSubmit, departments, systems }: CreateRequestModalProps) {
+export default function CreateRequestModal({ isOpen, onClose, onSubmit, departments, systems, profiles }: CreateRequestModalProps) {
   const [reqId, setReqId] = useState('');
   const [isUploading, setIsUploading] = useState(false);
+  const [isSaving, setIsSaving] = useState(false);
   const [title, setTitle] = useState('');
-  const [accessType, setAccessType] = useState<AccessType>('Application Access');
+  const [accessType, setAccessType] = useState<AccessType>('New');
+  const [requestedRole, setRequestedRole] = useState('');
+  const [manager, setManager] = useState('');
   const [systemName, setSystemName] = useState('');
   const [justification, setJustification] = useState('');
   const [priority, setPriority] = useState<PriorityLevel>('Medium');
@@ -26,10 +30,21 @@ export default function CreateRequestModal({ isOpen, onClose, onSubmit, departme
   const [dragActive, setDragActive] = useState(false);
   const [validationError, setValidationError] = useState('');
 
+  const generateUUID = () => {
+    if (typeof crypto !== 'undefined' && typeof crypto.randomUUID === 'function') {
+      return crypto.randomUUID();
+    }
+    // Fallback UUID v4
+    return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, function(c) {
+      const r = Math.random() * 16 | 0, v = c === 'x' ? r : (r & 0x3 | 0x8);
+      return v.toString(16);
+    });
+  };
+
   // Generate unique request ID when modal opens
   useEffect(() => {
     if (isOpen) {
-      setReqId('req-' + Math.floor(100 + Math.random() * 900));
+      setReqId('req-' + generateUUID());
     }
   }, [isOpen]);
 
@@ -497,43 +512,59 @@ export default function CreateRequestModal({ isOpen, onClose, onSubmit, departme
     }
   };
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (isUploading) {
       setValidationError('Please wait while attachments are uploading to storage.');
       return;
     }
-    if (!title.trim() || !systemName || !justification.trim() || !departmentId) {
+    if (isSaving) {
+      return;
+    }
+    if (!title.trim() || !systemName || !justification.trim() || !departmentId || !requestedRole.trim() || !manager) {
       setValidationError('Please complete all required fields (*).');
       return;
     }
     setValidationError('');
+    setIsSaving(true);
 
-    onSubmit({
-      id: reqId,
-      title,
-      accessType,
-      systemName,
-      justification,
-      priority,
-      departmentId,
-      startDate,
-      endDate: endDate || undefined,
-      attachments: simulatedAttachments.length > 0 ? simulatedAttachments : undefined
-    });
+    try {
+      await onSubmit({
+        id: reqId,
+        title,
+        accessType,
+        systemName,
+        justification,
+        priority,
+        departmentId,
+        startDate,
+        endDate: endDate || undefined,
+        requestedRole,
+        manager,
+        currentApprover: manager,
+        attachments: simulatedAttachments.length > 0 ? simulatedAttachments : undefined
+      });
 
-    // Reset status & Stop camera
-    setTitle('');
-    setAccessType('Application Access');
-    setSystemName('');
-    setJustification('');
-    setPriority('Medium');
-    setDepartmentId('');
-    setStartDate(new Date().toISOString().split('T')[0]);
-    setEndDate('');
-    setSimulatedAttachments([]);
-    stopCamera();
-    onClose();
+      // Reset status & Stop camera
+      setTitle('');
+      setAccessType('New');
+      setRequestedRole('');
+      setManager('');
+      setSystemName('');
+      setJustification('');
+      setPriority('Medium');
+      setDepartmentId('');
+      setStartDate(new Date().toISOString().split('T')[0]);
+      setEndDate('');
+      setSimulatedAttachments([]);
+      stopCamera();
+      onClose();
+    } catch (err: any) {
+      console.error("Failed to submit request", err);
+      setValidationError(err?.message || 'An error occurred while saving the request.');
+    } finally {
+      setIsSaving(false);
+    }
   };
 
   return (
@@ -592,12 +623,9 @@ export default function CreateRequestModal({ isOpen, onClose, onSubmit, departme
                 onChange={(e) => setAccessType(e.target.value as AccessType)}
                 className="w-full px-4 py-2.5 bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl text-gray-950 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500 dark:focus:ring-blue-600 transition-shadow text-sm"
               >
-                <option value="Application Access">Application Access</option>
-                <option value="Database Access">Database Access</option>
-                <option value="Folder Access">Folder Access</option>
-                <option value="Email Group Access">Email Group Access</option>
-                <option value="VPN Access">VPN Access</option>
-                <option value="Server Access">Server Access</option>
+                <option value="New">New</option>
+                <option value="Modify">Modify</option>
+                <option value="Remove">Remove</option>
               </select>
             </div>
 
@@ -618,6 +646,63 @@ export default function CreateRequestModal({ isOpen, onClose, onSubmit, departme
                   <option key={sys.id} value={sys.name}>{sys.name}</option>
                 ))}
               </select>
+            </div>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            {/* Requested Role */}
+            <div className="space-y-1.5">
+              <label id="lbl-requested-role" className="block text-sm font-semibold text-gray-700 dark:text-gray-300">
+                Requested Role <span className="text-red-500">*</span>
+              </label>
+              <input
+                id="input-requested-role"
+                type="text"
+                required
+                placeholder="e.g. Reader, Contributor, Administrator"
+                value={requestedRole}
+                onChange={(e) => setRequestedRole(e.target.value)}
+                className="w-full px-4 py-2.5 bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl text-gray-950 dark:text-white placeholder-gray-400 dark:placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-blue-500 dark:focus:ring-blue-600 transition-shadow text-sm"
+              />
+            </div>
+
+            {/* Manager */}
+            <div className="space-y-1.5">
+              <label id="lbl-manager" className="block text-sm font-semibold text-gray-700 dark:text-gray-300">
+                Manager <span className="text-red-500">*</span>
+              </label>
+              {profiles && profiles.length > 0 ? (
+                <select
+                  id="select-manager"
+                  required
+                  value={manager}
+                  onChange={(e) => setManager(e.target.value)}
+                  className="w-full px-4 py-2.5 bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl text-gray-950 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500 dark:focus:ring-blue-600 transition-shadow text-sm"
+                >
+                  <option value="">Select Department Manager</option>
+                  {profiles
+                    .filter(p => p.role === 'Manager' || p.role === 'Department Manager' || p.role === 'Super Admin' || p.role === 'IT Admin')
+                    .map(mgr => (
+                      <option key={mgr.id} value={mgr.fullName}>{mgr.fullName} ({mgr.email})</option>
+                    ))}
+                  {/* Fallback options */}
+                  {profiles
+                    .filter(p => !(p.role === 'Manager' || p.role === 'Department Manager' || p.role === 'Super Admin' || p.role === 'IT Admin'))
+                    .map(p => (
+                      <option key={p.id} value={p.fullName}>{p.fullName} ({p.email})</option>
+                    ))}
+                </select>
+              ) : (
+                <input
+                  id="input-manager"
+                  type="text"
+                  required
+                  placeholder="Enter Manager's Full Name"
+                  value={manager}
+                  onChange={(e) => setManager(e.target.value)}
+                  className="w-full px-4 py-2.5 bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl text-gray-950 dark:text-white placeholder-gray-400 dark:placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-blue-500 dark:focus:ring-blue-600 transition-shadow text-sm"
+                />
+              )}
             </div>
           </div>
 
@@ -1002,16 +1087,16 @@ export default function CreateRequestModal({ isOpen, onClose, onSubmit, departme
           <button
             id="submit-request-btn"
             type="button"
-            disabled={isUploading}
+            disabled={isUploading || isSaving}
             onClick={handleSubmit}
-            className={`btn-primary-minimal py-2 px-5 ${isUploading ? 'opacity-50 cursor-not-allowed' : ''}`}
+            className={`btn-primary-minimal py-2 px-5 ${(isUploading || isSaving) ? 'opacity-50 cursor-not-allowed' : ''}`}
           >
-            {isUploading ? (
+            {isUploading || isSaving ? (
               <Loader2 className="w-4 h-4 animate-spin" />
             ) : (
               <Plus className="w-4 h-4" />
             )}
-            <span>{isUploading ? 'Uploading...' : 'Submit Request'}</span>
+            <span>{isUploading ? 'Uploading...' : isSaving ? 'Saving...' : 'Submit Request'}</span>
           </button>
         </div>
 

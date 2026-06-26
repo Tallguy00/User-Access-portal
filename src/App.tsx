@@ -32,7 +32,7 @@ import CreateRequestModal from './components/CreateRequestModal';
 import RequestDetailsModal from './components/RequestDetailsModal';
 import UserProfileModal from './components/UserProfileModal';
 
-import { ShieldCheck, Users, LayoutDashboard, FileBarChart, History, Settings, Sun, Moon } from 'lucide-react';
+import { ShieldCheck, Users, LayoutDashboard, FileBarChart, History, Settings, Sun, Moon, CheckCircle2, AlertCircle } from 'lucide-react';
 
 export default function App() {
   // Theme state
@@ -90,6 +90,20 @@ export default function App() {
   const [isCreateRequestOpen, setIsCreateRequestOpen] = useState(false);
   const [selectedRequest, setSelectedRequest] = useState<AccessRequest | null>(null);
   const [isProfileOpen, setIsProfileOpen] = useState(false);
+  const [toast, setToast] = useState<{ message: string; type: 'success' | 'error' | 'info' } | null>(null);
+
+  const showToast = (message: string, type: 'success' | 'error' | 'info' = 'success') => {
+    setToast({ message, type });
+  };
+
+  useEffect(() => {
+    if (toast) {
+      const timer = setTimeout(() => {
+        setToast(null);
+      }, 4000);
+      return () => clearTimeout(timer);
+    }
+  }, [toast]);
 
   // Sync state to local storage on changes
   useEffect(() => {
@@ -632,15 +646,16 @@ export default function App() {
     if (!currentUser) return;
 
     const createdAt = new Date().toISOString();
-    const reqId = newReq.id || ('req-' + Math.floor(100 + Math.random() * 900));
+    const reqId = newReq.id || ('req-' + (typeof crypto !== 'undefined' && typeof crypto.randomUUID === 'function' ? crypto.randomUUID() : Math.random().toString(36).substring(2, 15)));
     const requestObj: AccessRequest = {
       ...newReq,
       id: reqId,
       userId: currentUser.id,
       userFullName: currentUser.fullName,
       userEmail: currentUser.email,
-      status: 'Submitted',
+      status: 'Pending',
       createdAt,
+      updatedAt: createdAt,
       commentsHistory: [
         {
           id: 'comment-initial-' + Math.random().toString(36).substring(2, 9),
@@ -653,53 +668,70 @@ export default function App() {
       ]
     };
 
-    setRequests(prev => [requestObj, ...prev]);
-
-    // Send notifications to operator
-    addNotification(
-      currentUser.email,
-      `Your request "${newReq.title}" for ${newReq.systemName} has been submitted for manager approval.`,
-      'submitted'
-    );
-
-    // Audit trace
-    logAuditEvent(
-      currentUser.email,
-      currentUser.role,
-      'Submit Request',
-      `Sourced access request ${reqId} for "${newReq.systemName}" prioritizing "${newReq.priority}".`
-    );
-
     // Persist request directly to the Supabase Database table
     try {
       const { data: { user } } = await supabase.auth.getUser();
-      if (user) {
-        const { error } = await supabase.from('access_requests').insert({
-          id: reqId,
-          user_id: user.id,
-          user_email: currentUser.email,
-          user_full_name: currentUser.fullName,
-          department_id: newReq.departmentId,
-          title: newReq.title,
-          access_type: newReq.accessType,
-          system_name: newReq.systemName,
-          justification: newReq.justification,
-          priority: newReq.priority,
-          start_date: newReq.startDate,
-          end_date: newReq.endDate || null,
-          status: 'Submitted',
-          created_at: createdAt,
-          attachments: newReq.attachments || [],
-          comments: newReq.comments || null,
-          comments_history: requestObj.commentsHistory,
-          provisioned_credentials: null
-        });
-        if (error) {
-          console.error("Error inserting request into Supabase DB:", error);
-        }
+      if (!user) {
+        throw new Error("No authenticated session found. Please sign in again.");
       }
-    } catch (err) {
+
+      const { error } = await supabase.from('access_requests').insert({
+        id: reqId,
+        user_id: user.id,
+        user_email: currentUser.email,
+        user_full_name: currentUser.fullName,
+        department_id: newReq.departmentId,
+        title: newReq.title,
+        access_type: newReq.accessType,
+        system_name: newReq.systemName,
+        justification: newReq.justification,
+        priority: newReq.priority,
+        start_date: newReq.startDate,
+        end_date: newReq.endDate || null,
+        status: 'Pending',
+        created_at: createdAt,
+        updated_at: createdAt,
+        requested_role: newReq.requestedRole || null,
+        manager: newReq.manager || null,
+        current_approver: newReq.manager || null,
+        attachments: newReq.attachments || [],
+        comments: newReq.comments || null,
+        comments_history: requestObj.commentsHistory,
+        provisioned_credentials: null
+      });
+
+      if (error) {
+        console.error("Error inserting request into Supabase DB:", error);
+        if (error.message && (error.message.includes("column") || error.message.includes("constraint"))) {
+          throw new Error(`Database schema needs updating. Please make sure the required SQL schema changes have been executed in your Supabase SQL editor. Details: ${error.message}`);
+        }
+        throw new Error(error.message || "Failed to insert request into Supabase database.");
+      }
+
+      // Success! Update local state
+      setRequests(prev => [requestObj, ...prev]);
+
+      // Send notification
+      addNotification(
+        currentUser.email,
+        `Your request "${newReq.title}" for ${newReq.systemName} has been submitted for approval.`,
+        'submitted'
+      );
+
+      // Audit trace
+      logAuditEvent(
+        currentUser.email,
+        currentUser.role,
+        'Submit Request',
+        `Sourced access request ${reqId} for "${newReq.systemName}" prioritizing "${newReq.priority}".`
+      );
+
+      showToast("Access request created successfully!", "success");
+
+    } catch (err: any) {
       console.error("Supabase request insertion exception:", err);
+      showToast(err.message || "Failed to submit request.", "error");
+      throw err;
     }
   };
 
@@ -1374,6 +1406,7 @@ export default function App() {
         onSubmit={handleCreateRequestSubmit}
         departments={departments}
         systems={systems}
+        profiles={profiles}
       />
 
       <RequestDetailsModal
@@ -1397,6 +1430,27 @@ export default function App() {
           onSaveProfile={handleSaveProfile}
           profiles={profiles}
         />
+      )}
+
+      {/* Floating Toast Notification */}
+      {toast && (
+        <div 
+          id="toast-notification"
+          className={`fixed bottom-6 right-6 z-50 flex items-center gap-3 px-4 py-3 rounded-xl shadow-lg border animate-slide-in-right ${
+            toast.type === 'success' 
+              ? 'bg-emerald-50 dark:bg-emerald-950/40 border-emerald-200 dark:border-emerald-900/50 text-emerald-800 dark:text-emerald-300' 
+              : toast.type === 'error'
+              ? 'bg-rose-50 dark:bg-rose-950/40 border-rose-200 dark:border-rose-900/50 text-rose-800 dark:text-rose-300'
+              : 'bg-blue-50 dark:bg-blue-950/40 border-blue-200 dark:border-blue-900/50 text-blue-800 dark:text-blue-300'
+          }`}
+        >
+          {toast.type === 'success' ? (
+            <CheckCircle2 className="w-5 h-5 text-emerald-600 dark:text-emerald-450 shrink-0" />
+          ) : (
+            <AlertCircle className="w-5 h-5 text-rose-600 dark:text-rose-450 shrink-0" />
+          )}
+          <span className="text-sm font-medium">{toast.message}</span>
+        </div>
       )}
 
     </div>
