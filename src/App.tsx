@@ -120,14 +120,14 @@ export default function App() {
 
   // Automated pending SLA reminders (>48h)
   useEffect(() => {
-    const safeReqs = Array.isArray(requests) ? requests : [];
-    const pendingReqs = safeReqs.filter(req => req && (req.status === 'Submitted' || req.status === 'Under Review'));
+    const safeRequests = Array.isArray(requests) ? requests.filter(Boolean) : [];
+    const pendingReqs = safeRequests.filter(req => req.status === 'Submitted' || req.status === 'Under Review');
     if (pendingReqs.length === 0) return;
 
     const now = new Date();
     const fortyEightHoursInMs = 48 * 60 * 60 * 1000;
-    const safeProfiles = Array.isArray(profiles) ? profiles : [];
-    const managers = safeProfiles.filter(p => p && p.role === 'Manager');
+    const safeProfiles = Array.isArray(profiles) ? profiles.filter(Boolean) : [];
+    const managers = safeProfiles.filter(p => p.role === 'Manager');
     if (managers.length === 0) return;
 
     setNotifications(prevNotifications => {
@@ -372,7 +372,8 @@ export default function App() {
   useEffect(() => {
     if (sessionUserEmail) {
       const trimKey = sessionUserEmail.toLowerCase().trim();
-      const foundProfile = profiles.find(p => 
+      const safeProfiles = Array.isArray(profiles) ? profiles.filter(Boolean) : [];
+      const foundProfile = safeProfiles.find(p => 
         p.email.toLowerCase().trim() === trimKey
       );
       if (foundProfile) {
@@ -414,7 +415,8 @@ export default function App() {
     setActiveTab('dashboard');
 
     // Detect role for log context mapping
-    const foundProfile = profiles.find(p => p.email.toLowerCase() === authenticatedEmail.toLowerCase());
+    const safeProfiles = Array.isArray(profiles) ? profiles.filter(Boolean) : [];
+    const foundProfile = safeProfiles.find(p => p.email.toLowerCase() === authenticatedEmail.toLowerCase());
     const matchedRole = foundProfile?.role || 'User';
 
     // Create Audit entry for login
@@ -722,7 +724,7 @@ export default function App() {
       let nextStatus: RequestStatus = req.status;
       let notificationType: AppNotification['type'] = 'info_requested';
 
-      if (currentUser.role === 'Manager' || currentUser.role === 'Super Admin') {
+      if (currentUser.role === 'Manager' || currentUser.role === 'Department Manager' || currentUser.role === 'Super Admin') {
         if (action === 'Approve') {
           nextStatus = 'Approved';
           notificationType = 'approved';
@@ -733,7 +735,7 @@ export default function App() {
           nextStatus = 'Under Review';
           notificationType = 'info_requested';
         }
-      } else if (currentUser.role === 'IT Admin') {
+      } else if (currentUser.role === 'IT Admin' || currentUser.role === 'IT Support') {
         // Complete workflow
         if (action === 'Approve') {
           nextStatus = 'Completed';
@@ -784,8 +786,8 @@ export default function App() {
         id: 'comment-' + Math.random().toString(36).substring(2, 9),
         authorName: currentUser.fullName,
         authorRole: currentUser.role,
-        action: currentUser.role === 'IT Admin' && action === 'Approve' ? 'Complete' : action,
-        text: comments || (currentUser.role === 'IT Admin' && action === 'Approve' ? 'Access provisioned and completed.' : `Workflow update [${action}]`),
+        action: (currentUser.role === 'IT Admin' || currentUser.role === 'IT Support') && action === 'Approve' ? 'Complete' : action,
+        text: comments || ((currentUser.role === 'IT Admin' || currentUser.role === 'IT Support') && action === 'Approve' ? 'Access provisioned and completed.' : `Workflow update [${action}]`),
         timestamp: new Date().toISOString()
       };
 
@@ -828,7 +830,7 @@ export default function App() {
       let nextStatus: RequestStatus = req.status;
       let notificationType: AppNotification['type'] = 'info_requested';
 
-      if (currentUser.role === 'Manager' || currentUser.role === 'Super Admin') {
+      if (currentUser.role === 'Manager' || currentUser.role === 'Department Manager' || currentUser.role === 'Super Admin') {
         if (action === 'Approve') {
           nextStatus = 'Approved';
           notificationType = 'approved';
@@ -1107,6 +1109,7 @@ export default function App() {
           />
         );
       case 'Manager':
+      case 'Department Manager':
         return (
           <ManagerDashboard
             requests={requests}
@@ -1116,6 +1119,7 @@ export default function App() {
             onBulkWorkflowAction={handleBulkWorkflowAction}
           />
         );
+      case 'IT Support':
       case 'IT Admin':
       case 'Super Admin':
         // Display full Admin dashboard view metrics
@@ -1128,6 +1132,23 @@ export default function App() {
             searchTerm={globalSearchTerm}
             onSearchChange={setGlobalSearchTerm}
           />
+        );
+      default:
+        return (
+          <div className="p-8 text-center bg-yellow-50 dark:bg-yellow-950/20 border border-yellow-200 dark:border-yellow-900/40 rounded-2xl max-w-xl mx-auto space-y-3">
+            <h3 className="text-sm font-bold text-yellow-800 dark:text-yellow-400">Unhandled Sandbox Role Context</h3>
+            <p className="text-xs text-yellow-700/85 dark:text-yellow-300/80 leading-relaxed">
+              Your identity directory profile is assigned the custom role <strong className="font-extrabold">"{currentUser.role}"</strong>, which does not map to a standard dashboard context.
+            </p>
+            <div className="pt-2">
+              <button
+                onClick={() => handleSwitchSandboxRole('User')}
+                className="px-4 py-2 bg-yellow-650 hover:bg-yellow-700 text-white font-bold text-xs rounded-xl transition-all shadow-sm"
+              >
+                Reset Session to Employee (User)
+              </button>
+            </div>
+          </div>
         );
     }
   };
@@ -1191,7 +1212,7 @@ export default function App() {
               </button>
 
               {/* Only show User Directory, Auditing, Reports for Admin contexts */}
-              {(currentUser?.role === 'IT Admin' || currentUser?.role === 'Super Admin') && (
+              {(currentUser?.role === 'IT Admin' || currentUser?.role === 'Super Admin' || currentUser?.role === 'IT Support') && (
                 <>
                   <button
                     onClick={() => setActiveTab('users')}

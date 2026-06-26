@@ -298,10 +298,10 @@ export default function RequestDetailsModal({
   // "Flow: User -> Manager -> IT Admin -> Access Granted"
   // Manager approves requests in 'Submitted' or 'Under Review' status.
   // IT Admin processes approved requests in 'Approved' status to mark them as 'Completed' and grant access.
-  const canActAsManager = (currentUserRole === 'Manager' || currentUserRole === 'Super Admin') && 
+  const canActAsManager = (currentUserRole === 'Manager' || currentUserRole === 'Department Manager' || currentUserRole === 'Super Admin') && 
                           (request.status === 'Submitted' || request.status === 'Under Review');
 
-  const canActAsITAdmin = (currentUserRole === 'IT Admin' || currentUserRole === 'Super Admin') && 
+  const canActAsITAdmin = (currentUserRole === 'IT Admin' || currentUserRole === 'Super Admin' || currentUserRole === 'IT Support') && 
                           (request.status === 'Approved');
 
   // Completed status check

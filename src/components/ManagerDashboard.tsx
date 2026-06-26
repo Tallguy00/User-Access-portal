@@ -12,12 +12,13 @@ interface ManagerDashboardProps {
 }
 
 export default function ManagerDashboard({ 
-  requests = [], 
+  requests: rawRequests, 
   onSelectRequest,
   searchTerm: externalSearchTerm,
   onSearchChange: externalOnSearchChange,
   onBulkWorkflowAction
 }: ManagerDashboardProps) {
+  const requests = Array.isArray(rawRequests) ? rawRequests.filter(Boolean) : [];
   const [localSearchTerm, setLocalSearchTerm] = useState('');
   const [priorityFilter, setPriorityFilter] = useState('All');
   const [sortBy, setSortBy] = useState<string>('date-desc');
@@ -29,18 +30,16 @@ export default function ManagerDashboard({
   const searchTerm = externalSearchTerm !== undefined ? externalSearchTerm : localSearchTerm;
   const setSearchTerm = externalOnSearchChange !== undefined ? externalOnSearchChange : setLocalSearchTerm;
 
-  const safeRequests = Array.isArray(requests) ? requests : [];
-
   // Requests that require Manager Review (Submitted or Under Review status)
-  const pendingApprovals = safeRequests.filter(r => r && (r.status === 'Submitted' || r.status === 'Under Review'));
+  const pendingApprovals = requests.filter(r => r.status === 'Submitted' || r.status === 'Under Review');
   // Team requests includes everything that has progressed past Draft
-  const teamRequests = safeRequests.filter(r => r && r.status !== 'Draft');
+  const teamRequests = requests.filter(r => r.status !== 'Draft');
 
   // Stats
   const totalTeamRequests = teamRequests.length;
   const pendingCount = pendingApprovals.length;
-  const approvedCount = teamRequests.filter(r => r && (r.status === 'Completed' || r.status === 'Approved')).length;
-  const rejectedCount = teamRequests.filter(r => r && r.status === 'Rejected').length;
+  const approvedCount = teamRequests.filter(r => r.status === 'Completed' || r.status === 'Approved').length;
+  const rejectedCount = teamRequests.filter(r => r.status === 'Rejected').length;
   const successRatio = totalTeamRequests > 0 ? Math.round((approvedCount / (approvedCount + rejectedCount || 1)) * 100) : 0;
 
   const filteredPending = React.useMemo(() => {

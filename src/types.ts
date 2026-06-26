@@ -1,4 +1,4 @@
-export type UserRole = 'User' | 'Manager' | 'IT Admin' | 'Super Admin';
+export type UserRole = 'User' | 'Manager' | 'Department Manager' | 'IT Admin' | 'Super Admin' | 'IT Support';
 
 export type RequestStatus = 'Draft' | 'Submitted' | 'Under Review' | 'Approved' | 'Rejected' | 'Completed';
 

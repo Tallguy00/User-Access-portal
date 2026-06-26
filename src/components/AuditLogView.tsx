@@ -6,7 +6,8 @@ interface AuditLogViewProps {
   auditLogs: AuditLog[];
 }
 
-export default function AuditLogView({ auditLogs }: AuditLogViewProps) {
+export default function AuditLogView({ auditLogs: rawAuditLogs }: AuditLogViewProps) {
+  const auditLogs = Array.isArray(rawAuditLogs) ? rawAuditLogs.filter(Boolean) : [];
   const [searchTerm, setSearchTerm] = useState('');
   const [actionCategory, setActionCategory] = useState('All');
 

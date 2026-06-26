@@ -14,14 +14,16 @@ interface UserManagementProps {
 }
 
 export default function UserManagement({
-  profiles,
-  departments,
+  profiles: rawProfiles,
+  departments: rawDepartments,
   onUpdateRole,
   onUpdateStatus,
   onCreateUser,
   onResetPassword,
   currentUserRole = 'User'
 }: UserManagementProps) {
+  const profiles = Array.isArray(rawProfiles) ? rawProfiles.filter(Boolean) : [];
+  const departments = Array.isArray(rawDepartments) ? rawDepartments.filter(Boolean) : [];
   const [searchTerm, setSearchTerm] = useState('');
   const [roleFilter, setRoleFilter] = useState('All');
   
