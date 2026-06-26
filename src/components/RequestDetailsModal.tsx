@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { AccessRequest, UserRole, RequestStatus } from '../types';
-import { X, Calendar, User, Eye, Download, CheckCircle, AlertTriangle, HelpCircle, FileText, Send, Clock, Loader2, Check, ExternalLink, ShieldCheck, FileSpreadsheet } from 'lucide-react';
+import { X, Calendar, User, Eye, Download, CheckCircle, AlertTriangle, HelpCircle, FileText, Send, Clock, Loader2, Check, ExternalLink, ShieldCheck, FileSpreadsheet, Trash2 } from 'lucide-react';
 import { supabase } from '../supabaseClient';
 
 interface RequestDetailsModalProps {
@@ -23,6 +23,7 @@ interface RequestDetailsModalProps {
     }
   ) => void;
   departments: { id: string; name: string }[];
+  onDeleteAttachment?: (requestId: string, attachmentIndex: number) => Promise<void>;
 }
 
 export default function RequestDetailsModal({
@@ -33,7 +34,8 @@ export default function RequestDetailsModal({
   currentUserId,
   currentUserFullName,
   onWorkflowAction,
-  departments
+  departments,
+  onDeleteAttachment
 }: RequestDetailsModalProps) {
   const [comment, setComment] = useState('');
   const [actionError, setActionError] = useState('');
@@ -582,7 +584,7 @@ export default function RequestDetailsModal({
                         </div>
                       </div>
                       
-                      <div className="shrink-0 font-sans">
+                      <div className="shrink-0 font-sans flex items-center gap-1.5">
                         {fetchingStates[i] ? (
                           <div className="flex items-center gap-1.5 px-2 py-1 bg-blue-50 dark:bg-blue-950/40 text-blue-600 dark:text-blue-400 rounded-lg text-[10px] font-bold animate-pulse">
                             <Loader2 className="w-3 h-3 animate-spin text-blue-500" />
@@ -617,6 +619,24 @@ export default function RequestDetailsModal({
                           >
                             <Download className="w-3 h-3 text-blue-500 shrink-0" />
                             <span>Fetch</span>
+                          </button>
+                        )}
+
+                        {onDeleteAttachment && currentUserId === request?.userId && (
+                          <button
+                            type="button"
+                            onClick={async () => {
+                              if (confirm("Are you sure you want to permanently delete this attachment? This will delete the file from storage and remove its database reference.")) {
+                                await onDeleteAttachment(request.id, i);
+                                if (activePreviewFileIndex === i) {
+                                  setActivePreviewFileIndex(null);
+                                }
+                              }
+                            }}
+                            className="p-1 text-red-600 hover:text-red-700 dark:text-red-400 dark:hover:text-red-300 hover:bg-red-50 dark:hover:bg-red-950/30 rounded-lg border border-red-100 dark:border-red-900/40 cursor-pointer transition-all active:scale-95"
+                            title="Delete attachment permanently"
+                          >
+                            <Trash2 className="w-3.5 h-3.5" />
                           </button>
                         )}
                       </div>

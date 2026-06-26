@@ -820,6 +820,53 @@ export default function App() {
     }));
   };
 
+  const handleDeleteAttachment = async (requestId: string, attachmentIndex: number) => {
+    const req = requests.find(r => r.id === requestId);
+    if (!req || !req.attachments) return;
+
+    const attachment = req.attachments[attachmentIndex];
+    if (!attachment) return;
+
+    if (attachment.filePath) {
+      try {
+        const { error } = await supabase.storage
+          .from('app-files')
+          .remove([attachment.filePath]);
+        if (error) {
+          console.error("Failed to delete file from Supabase Storage:", error);
+        }
+      } catch (err) {
+        console.error("Error deleting file from Supabase Storage:", err);
+      }
+    }
+
+    const updatedAttachments = req.attachments.filter((_, idx) => idx !== attachmentIndex);
+    try {
+      const { error } = await supabase
+        .from('access_requests')
+        .update({ attachments: updatedAttachments })
+        .eq('id', requestId);
+
+      if (error) {
+        console.error("Failed to update attachments in Supabase DB:", error);
+        return;
+      }
+
+      setRequests(prev => prev.map(r => {
+        if (r.id === requestId) {
+          const updated = { ...r, attachments: updatedAttachments };
+          if (selectedRequest && selectedRequest.id === requestId) {
+            setSelectedRequest(updated);
+          }
+          return updated;
+        }
+        return r;
+      }));
+    } catch (err) {
+      console.error("Error updating attachments database reference:", err);
+    }
+  };
+
   // Bulk Approver Action Matrix
   const handleBulkWorkflowAction = (requestIds: string[], action: 'Approve' | 'Reject', comments: string) => {
     if (!currentUser) return;
@@ -1338,6 +1385,7 @@ export default function App() {
         currentUserFullName={currentUser?.fullName || ''}
         onWorkflowAction={handleRequestWorkflowAction}
         departments={departments}
+        onDeleteAttachment={handleDeleteAttachment}
       />
 
       {currentUser && (
