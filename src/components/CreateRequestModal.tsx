@@ -10,9 +10,10 @@ interface CreateRequestModalProps {
   departments: Department[];
   systems: SystemApplication[];
   profiles: UserProfile[];
+  currentUser: UserProfile | null;
 }
 
-export default function CreateRequestModal({ isOpen, onClose, onSubmit, departments, systems, profiles }: CreateRequestModalProps) {
+export default function CreateRequestModal({ isOpen, onClose, onSubmit, departments, systems, profiles, currentUser }: CreateRequestModalProps) {
   const [reqId, setReqId] = useState('');
   const [isUploading, setIsUploading] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
@@ -47,6 +48,26 @@ export default function CreateRequestModal({ isOpen, onClose, onSubmit, departme
       setReqId('req-' + generateUUID());
     }
   }, [isOpen]);
+
+  // Pre-fill department and manager of the user when modal opens
+  useEffect(() => {
+    if (isOpen) {
+      const userDept = currentUser?.departmentId || '';
+      setDepartmentId(userDept);
+      
+      if (userDept) {
+        // Find the manager for this department
+        const deptManager = profiles.find(p => p.role === 'Manager' && p.departmentId === userDept);
+        if (deptManager) {
+          setManager(deptManager.fullName);
+        } else {
+          setManager('');
+        }
+      } else {
+        setManager('');
+      }
+    }
+  }, [isOpen, currentUser, profiles]);
 
   // Camera & Mock Screenshot states
   const [activeTab, setActiveTab] = useState<'upload' | 'camera' | 'generate'>('upload');
@@ -677,11 +698,15 @@ export default function CreateRequestModal({ isOpen, onClose, onSubmit, departme
                   required
                   value={manager}
                   onChange={(e) => setManager(e.target.value)}
-                  className="w-full px-4 py-2.5 bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl text-gray-950 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500 dark:focus:ring-blue-600 transition-shadow text-sm"
+                  className="w-full px-4 py-2.5 bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl text-gray-950 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500 dark:focus:ring-blue-600 transition-shadow text-sm cursor-pointer"
                 >
                   <option value="">Select Department Manager</option>
                   {profiles
-                    .filter(p => p.role === 'Manager' || p.role === 'Department Manager' || p.role === 'Super Admin' || p.role === 'IT Admin')
+                    .filter(p => {
+                      const isDeptManager = (p.role === 'Manager' || p.role === 'Department Manager') && p.departmentId === departmentId;
+                      const isAdmin = p.role === 'Super Admin' || p.role === 'IT Admin';
+                      return isDeptManager || isAdmin;
+                    })
                     .map(mgr => (
                       <option key={mgr.id} value={mgr.fullName}>{mgr.fullName} ({mgr.email})</option>
                     ))}
@@ -710,8 +735,18 @@ export default function CreateRequestModal({ isOpen, onClose, onSubmit, departme
                 id="select-department"
                 required
                 value={departmentId}
-                onChange={(e) => setDepartmentId(e.target.value)}
-                className="w-full px-4 py-2.5 bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl text-gray-950 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500 dark:focus:ring-blue-600 transition-shadow text-sm"
+                onChange={(e) => {
+                  const newDeptId = e.target.value;
+                  setDepartmentId(newDeptId);
+                  // Find the manager for this newly selected department and pre-fill
+                  const deptManager = profiles.find(p => p.role === 'Manager' && p.departmentId === newDeptId);
+                  if (deptManager) {
+                    setManager(deptManager.fullName);
+                  } else {
+                    setManager('');
+                  }
+                }}
+                className="w-full px-4 py-2.5 bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl text-gray-950 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500 dark:focus:ring-blue-600 transition-shadow text-sm cursor-pointer"
               >
                 <option value="">Select Department</option>
                 {departments.map(dep => (

@@ -1560,6 +1560,7 @@ export default function App() {
         departments={departments}
         systems={systems}
         profiles={profiles}
+        currentUser={currentUser}
       />
 
       <RequestDetailsModal
