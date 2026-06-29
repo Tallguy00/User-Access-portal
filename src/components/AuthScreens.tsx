@@ -328,41 +328,54 @@ export function LoginScreen({ onSuccess, onNavigate, profiles }: LoginScreenProp
 
     const trimmedEmail = email.toLowerCase().trim();
 
-    // Pre-emptively match demo accounts
-    if (trimmedEmail === 'super@company.com' && password === 'SuperAdmin123') {
-      setTimeout(() => {
-        onSuccess('super@company.com');
-        setLoading(false);
-      }, 400);
-      return;
-    }
-    if (trimmedEmail === 'admin@company.com' && password === 'AdminIT123') {
-      setTimeout(() => {
-        onSuccess('admin@company.com');
-        setLoading(false);
-      }, 400);
-      return;
-    }
-    if ((trimmedEmail === 'manager@company.com' || trimmedEmail === 'manager.bob@company.com') && password === 'Manager123') {
-      setTimeout(() => {
-        onSuccess('manager.bob@company.com');
-        setLoading(false);
-      }, 400);
-      return;
-    }
-
     try {
-      const { data, error } = await supabase.auth.signInWithPassword({ email: trimmedEmail, password });
-      if (error) {
-        setErrorMsg(error.message);
-      } else if (data?.user || data?.session) {
+      // 1. Attempt real authentication with Supabase
+      const { data, error } = await supabase.auth.signInWithPassword({ 
+        email: trimmedEmail, 
+        password 
+      });
+
+      if (!error && (data?.user || data?.session)) {
+        console.log("Supabase Auth successful!");
         const loggedEmail = data.user?.email || trimmedEmail;
         onSuccess(loggedEmail);
+        return;
+      }
+
+      // 2. If Supabase fails (e.g. users not seeded on remote DB), match demo accounts pre-emptively
+      if (trimmedEmail === 'super@company.com' && password === 'SuperAdmin123') {
+        console.warn("Supabase Auth failed or bypassed. Falling back to local Super Admin session.");
+        onSuccess('super@company.com');
+        return;
+      }
+      if (trimmedEmail === 'admin@company.com' && password === 'AdminIT123') {
+        console.warn("Supabase Auth failed or bypassed. Falling back to local IT Admin session.");
+        onSuccess('admin@company.com');
+        return;
+      }
+      if ((trimmedEmail === 'manager@company.com' || trimmedEmail === 'manager.bob@company.com') && password === 'Manager123') {
+        console.warn("Supabase Auth failed or bypassed. Falling back to local Manager session.");
+        onSuccess('manager.bob@company.com');
+        return;
+      }
+
+      // If not a demo account and Supabase failed, show the error
+      if (error) {
+        setErrorMsg(error.message);
       } else {
-        onSuccess(trimmedEmail);
+        setErrorMsg('Access authorization failure. Please check your credentials.');
       }
     } catch (err: any) {
-      setErrorMsg(err?.message || 'Access authorization failure. Please check your fields.');
+      // 3. Safe fallback in case of unexpected exception (e.g. offline/network blocked in iframe sandbox)
+      if (trimmedEmail === 'super@company.com' && password === 'SuperAdmin123') {
+        onSuccess('super@company.com');
+      } else if (trimmedEmail === 'admin@company.com' && password === 'AdminIT123') {
+        onSuccess('admin@company.com');
+      } else if ((trimmedEmail === 'manager@company.com' || trimmedEmail === 'manager.bob@company.com') && password === 'Manager123') {
+        onSuccess('manager.bob@company.com');
+      } else {
+        setErrorMsg(err?.message || 'Access authorization failure. Please check your fields.');
+      }
     } finally {
       setLoading(false);
     }
