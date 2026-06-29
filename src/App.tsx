@@ -31,8 +31,9 @@ import AuditLogView from './components/AuditLogView';
 import CreateRequestModal from './components/CreateRequestModal';
 import RequestDetailsModal from './components/RequestDetailsModal';
 import UserProfileModal from './components/UserProfileModal';
+import FAQView from './components/FAQView';
 
-import { ShieldCheck, Users, LayoutDashboard, FileBarChart, History, Settings, Sun, Moon, CheckCircle2, AlertCircle } from 'lucide-react';
+import { ShieldCheck, Users, LayoutDashboard, FileBarChart, History, Settings, Sun, Moon, CheckCircle2, AlertCircle, HelpCircle } from 'lucide-react';
 
 export default function App() {
   // Theme state
@@ -88,7 +89,7 @@ export default function App() {
   const [systems] = useState<SystemApplication[]>(INITIAL_SYSTEMS);
 
   // Layout Tab select
-  const [activeTab, setActiveTab] = useState<'dashboard' | 'users' | 'audit_logs' | 'reports'>('dashboard');
+  const [activeTab, setActiveTab] = useState<'dashboard' | 'users' | 'audit_logs' | 'reports' | 'faq'>('dashboard');
 
   // Modals view controllers
   const [isCreateRequestOpen, setIsCreateRequestOpen] = useState(false);
@@ -1474,6 +1475,7 @@ export default function App() {
               
               {/* Tab Button */}
               <button
+                id="btn-nav-dashboard"
                 onClick={() => setActiveTab('dashboard')}
                 className={`w-full flex items-center gap-3 px-4 py-3 text-xs font-semibold transition-all rounded-xl ${
                   activeTab === 'dashboard'
@@ -1483,6 +1485,20 @@ export default function App() {
               >
                 <LayoutDashboard className="w-4 h-4 shrink-0" />
                 <span>Executive Dashboard</span>
+              </button>
+
+              {/* FAQ Tab Button */}
+              <button
+                id="btn-nav-faq"
+                onClick={() => setActiveTab('faq')}
+                className={`w-full flex items-center gap-3 px-4 py-3 text-xs font-semibold transition-all rounded-xl ${
+                  activeTab === 'faq'
+                    ? 'text-white bg-[#0052cc] shadow-md shadow-blue-900/10'
+                    : 'text-gray-400 hover:text-white hover:bg-white/5 border-transparent'
+                }`}
+              >
+                <HelpCircle className="w-4 h-4 shrink-0" />
+                <span>Frequently Asked Questions</span>
               </button>
 
               {/* Only show User Directory, Auditing, Reports for Admin contexts */}
@@ -1588,6 +1604,10 @@ export default function App() {
             <AuditLogView 
               auditLogs={auditLogs} 
             />
+          )}
+
+          {activeTab === 'faq' && (
+            <FAQView />
           )}
 
         </main>
