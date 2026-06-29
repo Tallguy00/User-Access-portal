@@ -57,7 +57,7 @@ export default function App() {
     return [
       { id: 'user-ops-admin', fullName: 'IT Director Admin', email: 'admin@company.com', role: 'IT Admin', departmentId: 'dep-ops', status: 'Active', createdAt: '2026-06-01T00:00:00Z', mfaEnabled: true },
       { id: 'user-super-admin', fullName: 'Chief Information Officer', email: 'super@company.com', role: 'Super Admin', departmentId: 'dep-ops', status: 'Active', createdAt: '2026-06-01T00:00:00Z', mfaEnabled: true },
-      { id: 'user-mgr-bob', fullName: 'Bob Vance', email: 'manager.bob@company.com', role: 'Manager', departmentId: 'dep-fin', status: 'Active', createdAt: '2026-06-01T00:00:00Z', mfaEnabled: true },
+      { id: 'user-mgr-bob', fullName: 'Bob Manager', email: 'manager.bob@company.com', role: 'Manager', departmentId: 'dep-fin', status: 'Active', createdAt: '2026-06-01T00:00:00Z', mfaEnabled: true },
       { id: 'user-emp-jane', fullName: 'Jane Smith', email: 'employee.jane@company.com', role: 'User', departmentId: 'dep-eng', status: 'Active', createdAt: '2026-06-05T00:00:00Z', mfaEnabled: true },
       { id: 'user-emp-mark', fullName: 'Mark Fletcher', email: 'finance.mark@company.com', role: 'User', departmentId: 'dep-fin', status: 'Active', createdAt: '2026-06-06T00:00:00Z', mfaEnabled: true },
       { id: 'user-emp-lucy', fullName: 'Lucy Thorne', email: 'hr.lucy@company.com', role: 'User', departmentId: 'dep-hr', status: 'Active', createdAt: '2026-06-07T00:00:00Z', mfaEnabled: true }
@@ -581,7 +581,7 @@ export default function App() {
       }
     };
 
-    // Align department to 'dep-fin' (Finance) if simulating a Manager, so they can see Bob Vance's queue,
+    // Align department to 'dep-fin' (Finance) if simulating a Manager, so they can see Bob Manager's queue,
     // otherwise keep original department.
     const newDeptId = (newRole === 'Manager' || newRole === 'Department Manager') 
       ? 'dep-fin' 
