@@ -276,7 +276,7 @@ export default function App() {
         return;
       }
       
-      if (data && data.length > 0) {
+      if (data) {
         // Map snake_case columns back to camelCase models
         const mappedRequests: AccessRequest[] = data.map(item => ({
           id: item.id,
@@ -565,12 +565,56 @@ export default function App() {
   };
 
   // Switch sandbox role on the fly
-  const handleSwitchSandboxRole = (newRole: UserRole) => {
+  const handleSwitchSandboxRole = async (newRole: UserRole) => {
     if (!currentUser) return;
     setGlobalSearchTerm('');
-    const updated = { ...currentUser, role: newRole };
+    
+    // Determine the corresponding database role based on React UserRole check constraints
+    const mapRoleForDatabase = (role: UserRole): string => {
+      switch (role) {
+        case 'Department Manager':
+          return 'Manager';
+        case 'IT Support':
+          return 'IT Admin';
+        default:
+          return role;
+      }
+    };
+
+    // Align department to 'dep-fin' (Finance) if simulating a Manager, so they can see Bob Vance's queue,
+    // otherwise keep original department.
+    const newDeptId = (newRole === 'Manager' || newRole === 'Department Manager') 
+      ? 'dep-fin' 
+      : currentUser.departmentId || 'dep-eng';
+
+    const updated = { ...currentUser, role: newRole, departmentId: newDeptId };
     setCurrentUser(updated);
     setProfiles(prev => prev.map(p => p.id === currentUser.id ? updated : p));
+
+    // Persist this sandbox role & department alignment to the database profile so RLS policies take effect!
+    const isUUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(currentUser.id);
+    if (isUUID) {
+      try {
+        const dbRole = mapRoleForDatabase(newRole);
+        const { error } = await supabase
+          .from('profiles')
+          .update({ 
+            role: dbRole,
+            department_id: newDeptId
+          })
+          .eq('id', currentUser.id);
+
+        if (error) {
+          console.error("Error updating profile role/department in database:", error);
+        } else {
+          console.log(`Database profile role aligned to: ${dbRole}, department aligned to: ${newDeptId}`);
+          // Instantly refresh requests to apply updated RLS policies
+          fetchRequestsFromDB();
+        }
+      } catch (err) {
+        console.error("Failed to update database profile:", err);
+      }
+    }
 
     logAuditEvent(
       currentUser.email,
