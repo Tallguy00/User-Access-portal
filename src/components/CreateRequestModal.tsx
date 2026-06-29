@@ -603,7 +603,7 @@ export default function CreateRequestModal({ isOpen, onClose, onSubmit, departme
             onClick={onClose}
             className="p-2 text-gray-400 hover:text-gray-600 dark:hover:text-gray-200 hover:bg-gray-50 dark:hover:bg-gray-800 rounded-full transition-colors"
           >
-            <X className="w-5 h-5" />
+            
           </button>
         </div>
 

@@ -159,7 +159,7 @@ export default function FAQView() {
         
         {/* Search bar */}
         <div className="relative">
-          <Search className="absolute left-4 top-3.5 w-4 h-4 text-gray-400" />
+          <Search className="absolute right-4 top-3 w-4 h-4 text-gray-400" />
           <input
             id="faq-search"
             type="text"
@@ -180,7 +180,7 @@ export default function FAQView() {
               className="absolute right-4 top-3.5 text-gray-400 hover:text-gray-600 dark:hover:text-gray-200 transition-colors"
               aria-label="Clear search"
             >
-              <X className="w-4 h-4" />
+              
             </button>
           )}
         </div>

@@ -333,7 +333,7 @@ export default function RequestDetailsModal({
             onClick={onClose}
             className="p-2 text-gray-400 hover:text-gray-600 dark:hover:text-gray-200 hover:bg-gray-50 dark:hover:bg-gray-800 rounded-full transition-colors"
           >
-            <X className="w-5 h-5" />
+            
           </button>
         </div>
 
@@ -669,7 +669,7 @@ export default function RequestDetailsModal({
                         onClick={() => setActivePreviewFileIndex(null)}
                         className="text-gray-400 hover:text-gray-650 dark:hover:text-gray-300 p-1 bg-white dark:bg-gray-900 rounded border border-gray-200 dark:border-gray-800 cursor-pointer"
                       >
-                        <X className="w-3.5 h-3.5" />
+                        
                       </button>
                     </div>
 

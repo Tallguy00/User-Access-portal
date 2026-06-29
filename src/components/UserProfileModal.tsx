@@ -105,7 +105,7 @@ export default function UserProfileModal({
             onClick={onClose}
             className="p-2 text-gray-400 hover:text-gray-650 dark:hover:text-gray-200 hover:bg-gray-50 dark:hover:bg-gray-800 rounded-full transition-colors bg-transparent"
           >
-            <X className="w-5 h-5" />
+            <X className="w-5 h-5 overflow-hidden" />
           </button>
         </div>
 

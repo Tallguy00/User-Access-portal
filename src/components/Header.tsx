@@ -79,7 +79,7 @@ export default function Header({
               className="absolute right-2.5 top-2.5 text-gray-400 hover:text-gray-600 dark:hover:text-gray-200 transition-colors cursor-pointer"
               aria-label="Clear search"
             >
-              <X className="w-3.5 h-3.5" />
+              
             </button>
           )}
         </div>
