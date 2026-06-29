@@ -196,6 +196,11 @@ export function LoginScreen({ onSuccess, onNavigate, profiles }: LoginScreenProp
       'super@company.com', 
       'manager.bob@company.com', 
       'manager@company.com', 
+      'manager.fin@company.com',
+      'manager.eng@company.com',
+      'manager.hr@company.com',
+      'manager.mkt@company.com',
+      'manager.ops@company.com',
       'employee.jane@company.com', 
       'finance.mark@company.com', 
       'hr.lucy@company.com', 
@@ -270,7 +275,11 @@ export function LoginScreen({ onSuccess, onNavigate, profiles }: LoginScreenProp
         setLoading(false);
         if (otpCode === '123455' || otpCode === '123456') {
           setFailedAttempts(0);
-          onSuccess(trimmedEmail);
+          let finalEmail = trimmedEmail;
+          if (trimmedEmail === 'manager@company.com' || trimmedEmail === 'manager.bob@company.com') {
+            finalEmail = 'manager.fin@company.com';
+          }
+          onSuccess(finalEmail);
         } else {
           const next = failedAttempts + 1;
           setFailedAttempts(next);
@@ -353,9 +362,20 @@ export function LoginScreen({ onSuccess, onNavigate, profiles }: LoginScreenProp
         onSuccess('admin@company.com');
         return;
       }
-      if ((trimmedEmail === 'manager@company.com' || trimmedEmail === 'manager.bob@company.com') && password === 'Manager123') {
+      const isLocalManager = [
+        'manager@company.com',
+        'manager.bob@company.com',
+        'manager.fin@company.com',
+        'manager.eng@company.com',
+        'manager.hr@company.com',
+        'manager.mkt@company.com',
+        'manager.ops@company.com'
+      ].includes(trimmedEmail);
+
+      if (isLocalManager && password === 'Manager123') {
         console.warn("Supabase Auth failed or bypassed. Falling back to local Manager session.");
-        onSuccess('manager.bob@company.com');
+        const resolvedEmail = (trimmedEmail === 'manager@company.com' || trimmedEmail === 'manager.bob@company.com') ? 'manager.fin@company.com' : trimmedEmail;
+        onSuccess(resolvedEmail);
         return;
       }
 
@@ -367,12 +387,23 @@ export function LoginScreen({ onSuccess, onNavigate, profiles }: LoginScreenProp
       }
     } catch (err: any) {
       // 3. Safe fallback in case of unexpected exception (e.g. offline/network blocked in iframe sandbox)
+      const isLocalManager = [
+        'manager@company.com',
+        'manager.bob@company.com',
+        'manager.fin@company.com',
+        'manager.eng@company.com',
+        'manager.hr@company.com',
+        'manager.mkt@company.com',
+        'manager.ops@company.com'
+      ].includes(trimmedEmail);
+
       if (trimmedEmail === 'super@company.com' && password === 'SuperAdmin123') {
         onSuccess('super@company.com');
       } else if (trimmedEmail === 'admin@company.com' && password === 'AdminIT123') {
         onSuccess('admin@company.com');
-      } else if ((trimmedEmail === 'manager@company.com' || trimmedEmail === 'manager.bob@company.com') && password === 'Manager123') {
-        onSuccess('manager.bob@company.com');
+      } else if (isLocalManager && password === 'Manager123') {
+        const resolvedEmail = (trimmedEmail === 'manager@company.com' || trimmedEmail === 'manager.bob@company.com') ? 'manager.fin@company.com' : trimmedEmail;
+        onSuccess(resolvedEmail);
       } else {
         setErrorMsg(err?.message || 'Access authorization failure. Please check your fields.');
       }
@@ -385,7 +416,7 @@ export function LoginScreen({ onSuccess, onNavigate, profiles }: LoginScreenProp
   const handleDemoFill = (type: 'User' | 'Manager' | 'IT_Admin' | 'Super_Admin') => {
     const demoCredentials = {
       User: { email: 'employee.jane@company.com', pass: 'Manager123' },
-      Manager: { email: 'manager.bob@company.com', pass: 'Manager123' },
+      Manager: { email: 'manager.fin@company.com', pass: 'Manager123' },
       IT_Admin: { email: 'admin@company.com', pass: 'AdminIT123' },
       Super_Admin: { email: 'super@company.com', pass: 'SuperAdmin123' }
     };
@@ -814,8 +845,8 @@ export function RegisterScreen({ onSuccess, onNavigate, departments, profiles }:
           onSimulateSuccess={(email) => {
             onSuccess(email, {
               fullName: email.split('@')[0].split('.').map(w => w.charAt(0).toUpperCase() + w.slice(1)).join(' '),
-              role: email === 'super@company.com' ? 'Super Admin' : (email === 'admin@company.com' ? 'IT Admin' : (email === 'manager.bob@company.com' ? 'Manager' : 'User')),
-              departmentId: email === 'manager.bob@company.com' ? 'dep-fin' : 'dep-eng'
+              role: email === 'super@company.com' ? 'Super Admin' : (email === 'admin@company.com' ? 'IT Admin' : ((email.startsWith('manager.') || email === 'manager@company.com') ? 'Manager' : 'User')),
+              departmentId: email.startsWith('manager.eng') ? 'dep-eng' : (email.startsWith('manager.hr') ? 'dep-hr' : (email.startsWith('manager.mkt') ? 'dep-mkt' : (email.startsWith('manager.ops') ? 'dep-ops' : (email.startsWith('manager.fin') || email.startsWith('manager.bob') || email === 'manager@company.com' ? 'dep-fin' : 'dep-eng'))))
             });
           }}
         />

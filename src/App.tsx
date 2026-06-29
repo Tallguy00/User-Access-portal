@@ -57,7 +57,11 @@ export default function App() {
     return [
       { id: 'user-ops-admin', fullName: 'IT Director Admin', email: 'admin@company.com', role: 'IT Admin', departmentId: 'dep-ops', status: 'Active', createdAt: '2026-06-01T00:00:00Z', mfaEnabled: true },
       { id: 'user-super-admin', fullName: 'Chief Information Officer', email: 'super@company.com', role: 'Super Admin', departmentId: 'dep-ops', status: 'Active', createdAt: '2026-06-01T00:00:00Z', mfaEnabled: true },
-      { id: 'user-mgr-bob', fullName: 'Bob Manager', email: 'manager.bob@company.com', role: 'Manager', departmentId: 'dep-fin', status: 'Active', createdAt: '2026-06-01T00:00:00Z', mfaEnabled: true },
+      { id: 'user-mgr-fin', fullName: 'Finance Manager', email: 'manager.fin@company.com', role: 'Manager', departmentId: 'dep-fin', status: 'Active', createdAt: '2026-06-01T00:00:00Z', mfaEnabled: true },
+      { id: 'user-mgr-eng', fullName: 'Engineering Manager', email: 'manager.eng@company.com', role: 'Manager', departmentId: 'dep-eng', status: 'Active', createdAt: '2026-06-01T00:00:00Z', mfaEnabled: true },
+      { id: 'user-mgr-hr', fullName: 'HR Manager', email: 'manager.hr@company.com', role: 'Manager', departmentId: 'dep-hr', status: 'Active', createdAt: '2026-06-01T00:00:00Z', mfaEnabled: true },
+      { id: 'user-mgr-mkt', fullName: 'Marketing Manager', email: 'manager.mkt@company.com', role: 'Manager', departmentId: 'dep-mkt', status: 'Active', createdAt: '2026-06-01T00:00:00Z', mfaEnabled: true },
+      { id: 'user-mgr-ops', fullName: 'Operations Manager', email: 'manager.ops@company.com', role: 'Manager', departmentId: 'dep-ops', status: 'Active', createdAt: '2026-06-01T00:00:00Z', mfaEnabled: true },
       { id: 'user-emp-jane', fullName: 'Jane Smith', email: 'employee.jane@company.com', role: 'User', departmentId: 'dep-eng', status: 'Active', createdAt: '2026-06-05T00:00:00Z', mfaEnabled: true },
       { id: 'user-emp-mark', fullName: 'Mark Fletcher', email: 'finance.mark@company.com', role: 'User', departmentId: 'dep-fin', status: 'Active', createdAt: '2026-06-06T00:00:00Z', mfaEnabled: true },
       { id: 'user-emp-lucy', fullName: 'Lucy Thorne', email: 'hr.lucy@company.com', role: 'User', departmentId: 'dep-hr', status: 'Active', createdAt: '2026-06-07T00:00:00Z', mfaEnabled: true }
@@ -229,17 +233,30 @@ export default function App() {
         
         if (data && data.length > 0) {
           // Map snake_case columns back to camelCase models
-          const mappedProfiles: UserProfile[] = data.map(item => ({
-            id: item.id,
-            fullName: item.full_name,
-            email: item.email,
-            role: item.role as any,
-            departmentId: item.department_id || 'dep-eng',
-            status: item.status as any,
-            createdAt: item.created_at,
-            mfaEnabled: item.mfa_enabled,
-            notificationPreferences: item.notification_preferences
-          }));
+          const mappedProfiles: UserProfile[] = data.map(item => {
+            const emailLower = (item.email || '').toLowerCase().trim();
+            const isManagerEmail = emailLower.startsWith('manager.');
+            const mappedRole = isManagerEmail ? 'Manager' : (item.role as any);
+            const mappedDept = isManagerEmail ? (
+              emailLower.startsWith('manager.eng') ? 'dep-eng' : 
+              emailLower.startsWith('manager.hr') ? 'dep-hr' : 
+              emailLower.startsWith('manager.mkt') ? 'dep-mkt' : 
+              emailLower.startsWith('manager.ops') ? 'dep-ops' : 
+              (emailLower.startsWith('manager.fin') || emailLower.startsWith('manager.bob') || emailLower === 'manager@company.com' ? 'dep-fin' : 'dep-eng')
+            ) : (item.department_id || 'dep-eng');
+
+            return {
+              id: item.id,
+              fullName: item.full_name,
+              email: item.email,
+              role: mappedRole,
+              departmentId: mappedDept,
+              status: item.status as any,
+              createdAt: item.created_at,
+              mfaEnabled: item.mfa_enabled,
+              notificationPreferences: item.notification_preferences
+            };
+          });
           
           setProfiles(prev => {
             // Keep existing local profiles if they are not in database (e.g. seeds),
@@ -420,15 +437,43 @@ export default function App() {
           handleLogout();
           return;
         }
-        setCurrentUser(foundProfile);
+
+        // Coerce manager email addresses to Manager role and correct department
+        const emailLower = trimKey.toLowerCase();
+        const isManagerEmail = emailLower.startsWith('manager.');
+        if (isManagerEmail && (foundProfile.role !== 'Manager' || !foundProfile.departmentId.startsWith('dep-'))) {
+          const resolvedDept = emailLower.startsWith('manager.eng') ? 'dep-eng' : 
+                               emailLower.startsWith('manager.hr') ? 'dep-hr' : 
+                               emailLower.startsWith('manager.mkt') ? 'dep-mkt' : 
+                               emailLower.startsWith('manager.ops') ? 'dep-ops' : 
+                               (emailLower.startsWith('manager.fin') || emailLower.startsWith('manager.bob') || emailLower === 'manager@company.com' ? 'dep-fin' : 'dep-eng');
+          const upgradedProfile: UserProfile = {
+            ...foundProfile,
+            role: 'Manager',
+            departmentId: resolvedDept
+          };
+          setCurrentUser(upgradedProfile);
+          setProfiles(prev => prev.map(p => p.email.toLowerCase().trim() === trimKey ? upgradedProfile : p));
+        } else {
+          setCurrentUser(foundProfile);
+        }
       } else {
         // Create an on-the-fly roster entry for new Supabase signups
+        const emailLower = trimKey.toLowerCase();
+        const isManagerEmail = emailLower.startsWith('manager.');
+        const resolvedRole = isManagerEmail ? 'Manager' : 'User';
+        const resolvedDept = emailLower.startsWith('manager.eng') ? 'dep-eng' : 
+                             emailLower.startsWith('manager.hr') ? 'dep-hr' : 
+                             emailLower.startsWith('manager.mkt') ? 'dep-mkt' : 
+                             emailLower.startsWith('manager.ops') ? 'dep-ops' : 
+                             (emailLower.startsWith('manager.fin') || emailLower.startsWith('manager.bob') || emailLower === 'manager@company.com' ? 'dep-fin' : 'dep-eng');
+
         const newProfile: UserProfile = {
           id: 'user-' + Math.random().toString(36).substr(2, 9),
           fullName: trimKey.split('@')[0].split('.').map(w => w.charAt(0).toUpperCase() + w.slice(1)).join(' '),
           email: trimKey,
-          role: 'User',
-          departmentId: 'dep-eng',
+          role: resolvedRole,
+          departmentId: resolvedDept,
           status: 'Active',
           createdAt: new Date().toISOString()
         };
@@ -444,7 +489,15 @@ export default function App() {
   const handleLoginSuccess = async (email: string) => {
     // Leverage supabase.auth session retrieval to match/confirm user email
     const { data: { user } } = await supabase.auth.getUser();
-    const authenticatedEmail = user?.email || email;
+    let authenticatedEmail = user?.email || email;
+
+    // Normalize manager@company.com or manager.bob@company.com to manager.fin@company.com
+    if (authenticatedEmail) {
+      const emailLower = authenticatedEmail.toLowerCase().trim();
+      if (emailLower === 'manager@company.com' || emailLower === 'manager.bob@company.com') {
+        authenticatedEmail = 'manager.fin@company.com';
+      }
+    }
 
     localStorage.setItem('ar_session_user_email', authenticatedEmail);
     setSessionUserEmail(authenticatedEmail);
@@ -1333,6 +1386,7 @@ export default function App() {
         return (
           <ManagerDashboard
             requests={requests}
+            currentUser={currentUser}
             onSelectRequest={setSelectedRequest}
             searchTerm={globalSearchTerm}
             onSearchChange={setGlobalSearchTerm}
@@ -1548,6 +1602,7 @@ export default function App() {
         departments={departments}
         systems={systems}
         profiles={profiles}
+        currentUser={currentUser}
       />
 
       <RequestDetailsModal
