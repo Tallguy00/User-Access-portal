@@ -57,7 +57,11 @@ export default function App() {
     return [
       { id: 'user-ops-admin', fullName: 'IT Director Admin', email: 'admin@company.com', role: 'IT Admin', departmentId: 'dep-ops', status: 'Active', createdAt: '2026-06-01T00:00:00Z', mfaEnabled: true },
       { id: 'user-super-admin', fullName: 'Chief Information Officer', email: 'super@company.com', role: 'Super Admin', departmentId: 'dep-ops', status: 'Active', createdAt: '2026-06-01T00:00:00Z', mfaEnabled: true },
-      { id: 'user-mgr-bob', fullName: 'Bob Manager', email: 'manager.bob@company.com', role: 'Manager', departmentId: 'dep-fin', status: 'Active', createdAt: '2026-06-01T00:00:00Z', mfaEnabled: true },
+      { id: 'user-mgr-fin', fullName: 'Finance Manager', email: 'manager.fin@company.com', role: 'Manager', departmentId: 'dep-fin', status: 'Active', createdAt: '2026-06-01T00:00:00Z', mfaEnabled: true },
+      { id: 'user-mgr-eng', fullName: 'Engineering Manager', email: 'manager.eng@company.com', role: 'Manager', departmentId: 'dep-eng', status: 'Active', createdAt: '2026-06-01T00:00:00Z', mfaEnabled: true },
+      { id: 'user-mgr-hr', fullName: 'HR Manager', email: 'manager.hr@company.com', role: 'Manager', departmentId: 'dep-hr', status: 'Active', createdAt: '2026-06-01T00:00:00Z', mfaEnabled: true },
+      { id: 'user-mgr-mkt', fullName: 'Marketing Manager', email: 'manager.mkt@company.com', role: 'Manager', departmentId: 'dep-mkt', status: 'Active', createdAt: '2026-06-01T00:00:00Z', mfaEnabled: true },
+      { id: 'user-mgr-ops', fullName: 'Operations Manager', email: 'manager.ops@company.com', role: 'Manager', departmentId: 'dep-ops', status: 'Active', createdAt: '2026-06-01T00:00:00Z', mfaEnabled: true },
       { id: 'user-emp-jane', fullName: 'Jane Smith', email: 'employee.jane@company.com', role: 'User', departmentId: 'dep-eng', status: 'Active', createdAt: '2026-06-05T00:00:00Z', mfaEnabled: true },
       { id: 'user-emp-mark', fullName: 'Mark Fletcher', email: 'finance.mark@company.com', role: 'User', departmentId: 'dep-fin', status: 'Active', createdAt: '2026-06-06T00:00:00Z', mfaEnabled: true },
       { id: 'user-emp-lucy', fullName: 'Lucy Thorne', email: 'hr.lucy@company.com', role: 'User', departmentId: 'dep-hr', status: 'Active', createdAt: '2026-06-07T00:00:00Z', mfaEnabled: true }
@@ -446,9 +450,12 @@ export default function App() {
     const { data: { user } } = await supabase.auth.getUser();
     let authenticatedEmail = user?.email || email;
 
-    // Normalize manager@company.com to manager.bob@company.com
-    if (authenticatedEmail && authenticatedEmail.toLowerCase().trim() === 'manager@company.com') {
-      authenticatedEmail = 'manager.bob@company.com';
+    // Normalize manager@company.com or manager.bob@company.com to manager.fin@company.com
+    if (authenticatedEmail) {
+      const emailLower = authenticatedEmail.toLowerCase().trim();
+      if (emailLower === 'manager@company.com' || emailLower === 'manager.bob@company.com') {
+        authenticatedEmail = 'manager.fin@company.com';
+      }
     }
 
     localStorage.setItem('ar_session_user_email', authenticatedEmail);

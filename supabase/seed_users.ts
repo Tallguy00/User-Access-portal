@@ -40,11 +40,39 @@ const defaultUsers = [
     departmentId: 'dep-ops',
   },
   {
-    email: 'manager.bob@company.com',
+    email: 'manager.fin@company.com',
     password: 'Manager123',
-    fullName: 'Bob Manager',
+    fullName: 'Finance Manager',
     role: 'Manager',
-    departmentId: 'dep-fin', // Finance & Accounting department
+    departmentId: 'dep-fin',
+  },
+  {
+    email: 'manager.eng@company.com',
+    password: 'Manager123',
+    fullName: 'Engineering Manager',
+    role: 'Manager',
+    departmentId: 'dep-eng',
+  },
+  {
+    email: 'manager.hr@company.com',
+    password: 'Manager123',
+    fullName: 'HR Manager',
+    role: 'Manager',
+    departmentId: 'dep-hr',
+  },
+  {
+    email: 'manager.mkt@company.com',
+    password: 'Manager123',
+    fullName: 'Marketing Manager',
+    role: 'Manager',
+    departmentId: 'dep-mkt',
+  },
+  {
+    email: 'manager.ops@company.com',
+    password: 'Manager123',
+    fullName: 'Operations Manager',
+    role: 'Manager',
+    departmentId: 'dep-ops',
   }
 ];
 

@@ -97,7 +97,7 @@ export const INITIAL_AUDIT_LOGS: AuditLog[] = [
   },
   {
     id: 'log-002',
-    userEmail: 'manager.bob@company.com',
+    userEmail: 'manager.fin@company.com',
     userRole: 'Manager',
     action: 'Approve Request',
     details: 'Approved quarterly audit folder access request for Mark Fletcher.',
@@ -107,7 +107,7 @@ export const INITIAL_AUDIT_LOGS: AuditLog[] = [
   },
   {
     id: 'log-003',
-    userEmail: 'manager.bob@company.com',
+    userEmail: 'manager.fin@company.com',
     userRole: 'Manager',
     action: 'Reject Request',
     details: 'Rejected PostgreSQL DB superuser root credentials request due to security compliance constraints.',
