@@ -65,7 +65,7 @@ export default function Header({
       {/* Top Navigation Search Input */}
       {currentUser && setGlobalSearchTerm && (
         <div className="flex-1 max-w-sm mx-4 relative hidden md:block">
-          <Search className="absolute left-3 top-2.5 w-3.5 h-3.5 text-gray-400 pointer-events-none" />
+          <Search className="absolute right-3 top-2.5 w-3.5 h-3.5 text-gray-400 pointer-events-none" />
           <input
             type="text"
             placeholder="Search active requests by title or system..."

@@ -233,7 +233,7 @@ export default function ManagerDashboard({
 
             <div className="flex items-center gap-2 flex-wrap">
               <div className="relative">
-                <Search className="absolute left-3.5 top-2.5 w-4 h-4 text-gray-400" />
+                <Search className="absolute right-3.5 top-2.5 w-4 h-4 text-gray-400" />
                 <input
                   type="text"
                   placeholder="Filter by title or user..."
