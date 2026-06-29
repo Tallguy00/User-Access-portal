@@ -708,7 +708,7 @@ export default function CreateRequestModal({ isOpen, onClose, onSubmit, departme
                       return isDeptManager || isAdmin;
                     })
                     .map(mgr => (
-                      <option key={mgr.id} value={mgr.fullName}>{mgr.fullName} ({mgr.email})</option>
+                      <option key={mgr.id} value={mgr.fullName}>{mgr.fullName} </option>
                     ))}
                 </select>
               ) : (
