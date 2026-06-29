@@ -685,12 +685,6 @@ export default function CreateRequestModal({ isOpen, onClose, onSubmit, departme
                     .map(mgr => (
                       <option key={mgr.id} value={mgr.fullName}>{mgr.fullName} ({mgr.email})</option>
                     ))}
-                  {/* Fallback options */}
-                  {profiles
-                    .filter(p => !(p.role === 'Manager' || p.role === 'Department Manager' || p.role === 'Super Admin' || p.role === 'IT Admin'))
-                    .map(p => (
-                      <option key={p.id} value={p.fullName}>{p.fullName} ({p.email})</option>
-                    ))}
                 </select>
               ) : (
                 <input
