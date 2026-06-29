@@ -13,7 +13,7 @@ const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.
 if (!supabaseServiceKey) {
   console.warn("⚠️ Warning: SUPABASE_SERVICE_ROLE_KEY environment variable is not defined.");
   console.warn("Please run the script providing the environment variables. Example:");
-  console.warn("  SUPABASE_SERVICE_ROLE_KEY= npx tsx supabase/seed_users.ts\n");
+  console.warn("  SUPABASE_SERVICE_ROLE_KEY=qwertyuioj npx tsx supabase/seed_users.ts\n");
 }
 
 // Create Supabase client with Service Role Key to bypass RLS and use Admin Auth APIs
