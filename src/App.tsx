@@ -444,7 +444,12 @@ export default function App() {
   const handleLoginSuccess = async (email: string) => {
     // Leverage supabase.auth session retrieval to match/confirm user email
     const { data: { user } } = await supabase.auth.getUser();
-    const authenticatedEmail = user?.email || email;
+    let authenticatedEmail = user?.email || email;
+
+    // Normalize manager@company.com to manager.bob@company.com
+    if (authenticatedEmail && authenticatedEmail.toLowerCase().trim() === 'manager@company.com') {
+      authenticatedEmail = 'manager.bob@company.com';
+    }
 
     localStorage.setItem('ar_session_user_email', authenticatedEmail);
     setSessionUserEmail(authenticatedEmail);

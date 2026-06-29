@@ -270,7 +270,8 @@ export function LoginScreen({ onSuccess, onNavigate, profiles }: LoginScreenProp
         setLoading(false);
         if (otpCode === '123455' || otpCode === '123456') {
           setFailedAttempts(0);
-          onSuccess(trimmedEmail);
+          const finalEmail = trimmedEmail === 'manager@company.com' ? 'manager.bob@company.com' : trimmedEmail;
+          onSuccess(finalEmail);
         } else {
           const next = failedAttempts + 1;
           setFailedAttempts(next);
