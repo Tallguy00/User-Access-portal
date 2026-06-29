@@ -56,10 +56,12 @@ serve(async (req) => {
     const results = [];
 
     // Fetch existing users to prevent duplicates
-    const { data: { users }, error: listError } = await supabase.auth.admin.listUsers();
+    const { data, error: listError } = await supabase.auth.admin.listUsers();
     if (listError) {
       throw new Error(`Failed to list auth users: ${listError.message}`);
     }
+
+    const users = data?.users ?? [];
 
     for (const defaultUser of defaultUsers) {
       let authUserId = "";

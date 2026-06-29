@@ -31,9 +31,9 @@ export default function UserDashboard({
   const searchTerm = externalSearchTerm !== undefined ? externalSearchTerm : localSearchTerm;
   const setSearchTerm = externalOnSearchChange !== undefined ? externalOnSearchChange : setLocalSearchTerm;
 
-  // Filter requests for currently logged in user
-  const userRequests = requests.filter(req => req.userEmail === userEmail);
-  const userLogs = auditLogs.filter(log => log.userEmail === userEmail);
+  // Filter requests for currently logged in user (case-insensitively)
+  const userRequests = requests.filter(req => req.userEmail?.toLowerCase().trim() === userEmail?.toLowerCase().trim());
+  const userLogs = auditLogs.filter(log => log.userEmail?.toLowerCase().trim() === userEmail?.toLowerCase().trim());
 
   const activeCount = userRequests.filter(r => ['Submitted', 'Under Review', 'Approved'].includes(r.status)).length;
   const approvedCount = userRequests.filter(r => r.status === 'Completed').length;
