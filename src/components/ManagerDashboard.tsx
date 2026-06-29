@@ -1,10 +1,11 @@
 import React, { useState } from 'react';
-import { AccessRequest, ApprovalAction } from '../types';
+import { AccessRequest, ApprovalAction, UserProfile } from '../types';
 import { ClipboardCheck, Users, HelpCircle, CheckCircle, Search, Filter, MessageSquare, ArrowUpRight, BarChart2, CheckSquare, Clock, AlertTriangle } from 'lucide-react';
 import HighlightText from './HighlightText';
 
 interface ManagerDashboardProps {
   requests: AccessRequest[];
+  currentUser?: UserProfile | null;
   onSelectRequest: (request: AccessRequest) => void;
   searchTerm?: string;
   onSearchChange?: (val: string) => void;
@@ -13,12 +14,29 @@ interface ManagerDashboardProps {
 
 export default function ManagerDashboard({ 
   requests: rawRequests, 
+  currentUser,
   onSelectRequest,
   searchTerm: externalSearchTerm,
   onSearchChange: externalOnSearchChange,
   onBulkWorkflowAction
 }: ManagerDashboardProps) {
-  const requests = Array.isArray(rawRequests) ? rawRequests.filter(Boolean) : [];
+  const requests = React.useMemo(() => {
+    const arr = Array.isArray(rawRequests) ? rawRequests.filter(Boolean) : [];
+    if (!currentUser) return arr;
+    // If the user has a Manager role, filter to their department or assigned requests
+    if (currentUser.role === 'Manager' || currentUser.role === 'Department Manager') {
+      return arr.filter(r => {
+        const isSameDept = r.departmentId === currentUser.departmentId;
+        const isAssignedToMe = 
+          (r.manager && r.manager.toLowerCase().trim() === currentUser.fullName.toLowerCase().trim()) ||
+          (r.currentApprover && r.currentApprover.toLowerCase().trim() === currentUser.fullName.toLowerCase().trim()) ||
+          (r.userEmail && r.userEmail.toLowerCase().trim() === currentUser.email.toLowerCase().trim());
+        return isSameDept || isAssignedToMe;
+      });
+    }
+    return arr;
+  }, [rawRequests, currentUser]);
+
   const [localSearchTerm, setLocalSearchTerm] = useState('');
   const [priorityFilter, setPriorityFilter] = useState('All');
   const [sortBy, setSortBy] = useState<string>('date-desc');
