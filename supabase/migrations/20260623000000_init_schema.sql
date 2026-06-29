@@ -175,6 +175,10 @@ CREATE TABLE IF NOT EXISTS public.access_requests (
   end_date DATE,
   status TEXT NOT NULL CHECK (status IN ('Draft', 'Submitted', 'Under Review', 'Approved', 'Rejected', 'Completed')),
   created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+  updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+  requested_role TEXT,
+  manager TEXT,
+  current_approver TEXT,
   attachments JSONB NOT NULL DEFAULT '[]'::jsonb,
   comments TEXT,
   comments_history JSONB NOT NULL DEFAULT '[]'::jsonb,
@@ -195,7 +199,11 @@ ON public.access_requests FOR SELECT
 TO authenticated
 USING (
   auth.uid() = user_id
-  OR (public.is_manager() AND department_id = (SELECT department_id FROM public.profiles WHERE id = auth.uid()))
+  OR (public.is_manager() AND (
+    department_id = (SELECT department_id FROM public.profiles WHERE id = auth.uid())
+    OR manager = (SELECT full_name FROM public.profiles WHERE id = auth.uid())
+    OR current_approver = (SELECT full_name FROM public.profiles WHERE id = auth.uid())
+  ))
   OR public.is_admin()
 );
 
@@ -209,7 +217,11 @@ ON public.access_requests FOR UPDATE
 TO authenticated
 USING (
   auth.uid() = user_id
-  OR (public.is_manager() AND department_id = (SELECT department_id FROM public.profiles WHERE id = auth.uid()))
+  OR (public.is_manager() AND (
+    department_id = (SELECT department_id FROM public.profiles WHERE id = auth.uid())
+    OR manager = (SELECT full_name FROM public.profiles WHERE id = auth.uid())
+    OR current_approver = (SELECT full_name FROM public.profiles WHERE id = auth.uid())
+  ))
   OR public.is_admin()
 );
 
@@ -285,3 +297,13 @@ CREATE POLICY "Allow admins to view audit logs"
 ON public.audit_logs FOR SELECT
 TO authenticated
 USING (public.is_admin());
+
+
+--------------------------------------------------
+-- 8. REALTIME REPLICATION CONFIGURATION
+--------------------------------------------------
+-- Enable real-time replication for our core tables to allow Android and PC cross-platform live communications
+alter publication supabase_realtime add table public.access_requests;
+alter publication supabase_realtime add table public.notifications;
+alter publication supabase_realtime add table public.profiles;
+alter publication supabase_realtime add table public.audit_logs;

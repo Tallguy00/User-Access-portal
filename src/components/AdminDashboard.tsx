@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { AccessRequest, UserProfile, Department, RequestStatus } from '../types';
-import { ShieldAlert, Cpu, KeyRound, CheckSquare, Search, Lock, AlertTriangle, Play, CheckCircle, BarChart2, TrendingUp, Calendar as CalendarIcon, Download, FileSpreadsheet } from 'lucide-react';
+import { ShieldAlert, Cpu, KeyRound, CheckSquare, Search, Lock, AlertTriangle, Play, CheckCircle, BarChart2, TrendingUp, Calendar as CalendarIcon, Download, FileSpreadsheet, Eye, FileText } from 'lucide-react';
 import HighlightText from './HighlightText';
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, BarChart, Bar, Cell, PieChart, Pie, Legend } from 'recharts';
 
@@ -27,19 +27,26 @@ export default function AdminDashboard({
 
   const [localSearchTerm, setLocalSearchTerm] = useState('');
   const [sortBy, setSortBy] = useState<string>('date-desc');
+  const [activeQueueTab, setActiveQueueTab] = useState<'approved' | 'all'>('approved');
 
   const searchTerm = externalSearchTerm !== undefined ? externalSearchTerm : localSearchTerm;
   const setSearchTerm = externalOnSearchChange !== undefined ? externalOnSearchChange : setLocalSearchTerm;
 
-  // Requests approved by managers ready for IT to grant access (Completed / Approved status)
+  // Requests source based on current active tab
+  const displayedRequestsSource = React.useMemo(() => {
+    return activeQueueTab === 'approved' 
+      ? requests.filter(r => r.status === 'Approved')
+      : requests;
+  }, [requests, activeQueueTab]);
+
   const approvedRequests = requests.filter(r => r.status === 'Approved');
   const totalRequestsCount = requests.length;
   const activeUsersCount = profiles.filter(p => p.status === 'Active').length;
   const completedCount = requests.filter(r => r.status === 'Completed').length;
   const criticalCount = requests.filter(r => r.priority === 'Critical' && r.status !== 'Completed').length;
 
-  const filteredApproved = React.useMemo(() => {
-    const filtered = approvedRequests.filter(req => {
+  const filteredRequests = React.useMemo(() => {
+    const filtered = displayedRequestsSource.filter(req => {
       const titleStr = req.title || '';
       const userFullNameStr = req.userFullName || '';
       const systemNameStr = req.systemName || '';
@@ -75,7 +82,7 @@ export default function AdminDashboard({
       }
       return 0;
     });
-  }, [approvedRequests, searchTerm, sortBy]);
+  }, [displayedRequestsSource, searchTerm, sortBy]);
 
   // Generate the last 30 days of data for Recharts
   const chartData = React.useMemo(() => {
@@ -519,51 +526,98 @@ export default function AdminDashboard({
         {/* Approved and Ready queue */}
         <div className="lg:col-span-2 bg-white dark:bg-gray-900 border border-gray-100 dark:border-gray-800 rounded-2xl shadow-sm overflow-hidden flex flex-col">
           
-          <div className="p-5 border-b border-gray-100 dark:border-gray-800 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-            <div>
-              <h2 className="text-base font-bold text-gray-950 dark:text-white">Manager Approved Queue</h2>
-              <p className="text-xs text-gray-500 mt-0.5">Approved privileges waiting for IT provisioning in LDAP/Active Directory.</p>
-            </div>
-
-            <div className="flex items-center gap-2 flex-wrap">
-              <div className="relative">
-                <Search className="absolute left-3.5 top-2.5 w-4 h-4 text-gray-400" />
-                <input
-                  type="text"
-                  placeholder="Search approved requests..."
-                  value={searchTerm}
-                  onChange={(e) => setSearchTerm(e.target.value)}
-                  className="pl-10 pr-4 py-1.5 w-full sm:w-52 bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg text-xs text-gray-900 dark:text-white focus:outline-none focus:ring-1 focus:ring-blue-500"
-                />
+          <div className="p-5 border-b border-gray-100 dark:border-gray-800">
+            <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+              <div className="flex items-center space-x-1 p-1 bg-gray-50 dark:bg-gray-850 rounded-xl self-start">
+                <button
+                  type="button"
+                  onClick={() => {
+                    setActiveQueueTab('approved');
+                    setSearchTerm('');
+                  }}
+                  className={`px-4 py-2 text-xs font-bold rounded-lg transition-all ${
+                    activeQueueTab === 'approved'
+                      ? 'bg-white dark:bg-gray-800 text-blue-600 dark:text-blue-400 shadow-sm'
+                      : 'text-gray-500 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white'
+                  }`}
+                >
+                  Approved Queue ({requests.filter(r => r.status === 'Approved').length})
+                </button>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setActiveQueueTab('all');
+                    setSearchTerm('');
+                  }}
+                  className={`px-4 py-2 text-xs font-bold rounded-lg transition-all ${
+                    activeQueueTab === 'all'
+                      ? 'bg-white dark:bg-gray-800 text-blue-600 dark:text-blue-400 shadow-sm'
+                      : 'text-gray-500 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white'
+                  }`}
+                >
+                  All Requests ({requests.length})
+                </button>
               </div>
 
-              <select
-                value={sortBy}
-                onChange={(e) => setSortBy(e.target.value)}
-                className="px-2 py-1.5 bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg text-xs text-[11px] text-gray-700 dark:text-gray-300 focus:outline-none font-medium"
-                title="Sort by"
-              >
-                <option value="date-desc">Newest First</option>
-                <option value="date-asc">Oldest First</option>
-                <option value="priority-desc">Priority: High to Low</option>
-                <option value="priority-asc">Priority: Low to High</option>
-              </select>
+              <div className="flex items-center gap-2 flex-wrap">
+                <div className="relative">
+                  <Search className="absolute left-3.5 top-2.5 w-4 h-4 text-gray-400" />
+                  <input
+                    type="text"
+                    placeholder={activeQueueTab === 'approved' ? "Search approved..." : "Search all requests..."}
+                    value={searchTerm}
+                    onChange={(e) => setSearchTerm(e.target.value)}
+                    className="pl-10 pr-4 py-1.5 w-full sm:w-52 bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg text-xs text-gray-900 dark:text-white focus:outline-none focus:ring-1 focus:ring-blue-500"
+                  />
+                </div>
+
+                <select
+                  value={sortBy}
+                  onChange={(e) => setSortBy(e.target.value)}
+                  className="px-2 py-1.5 bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg text-xs text-[11px] text-gray-700 dark:text-gray-300 focus:outline-none font-medium"
+                  title="Sort by"
+                >
+                  <option value="date-desc">Newest First</option>
+                  <option value="date-asc">Oldest First</option>
+                  <option value="priority-desc">Priority: High to Low</option>
+                  <option value="priority-asc">Priority: Low to High</option>
+                  {activeQueueTab === 'all' && <option value="status">Status</option>}
+                </select>
+              </div>
+            </div>
+
+            <div className="mt-4">
+              <h2 className="text-sm font-bold text-gray-950 dark:text-white">
+                {activeQueueTab === 'approved' ? 'Manager Approved Queue' : 'All System Requests'}
+              </h2>
+              <p className="text-xs text-gray-500 mt-0.5">
+                {activeQueueTab === 'approved'
+                  ? 'Approved privileges waiting for IT provisioning in LDAP/Active Directory.'
+                  : 'Central administrative ledger tracking all submitted, under review, and completed requests.'}
+              </p>
             </div>
           </div>
 
           <div className="divide-y divide-gray-100 dark:divide-gray-800/60 overflow-y-auto max-h-[480px]">
-            {approvedRequests.length === 0 ? (
+            {activeQueueTab === 'approved' && requests.filter(r => r.status === 'Approved').length === 0 ? (
               <div className="p-16 text-center text-gray-400 flex flex-col items-center justify-center space-y-2">
                 <CheckCircle className="w-10 h-10 text-green-500" />
                 <div className="font-bold text-gray-900 dark:text-white">Access Provision Queue Empty!</div>
                 <div className="text-xs text-gray-400">All manager authorization approvals have been deployed successfully.</div>
               </div>
-            ) : filteredApproved.length === 0 ? (
+            ) : activeQueueTab === 'all' && requests.length === 0 ? (
+              <div className="p-16 text-center text-gray-400 flex flex-col items-center justify-center space-y-2">
+                <FileText className="w-10 h-10 text-gray-300 dark:text-gray-600" />
+                <div className="font-bold text-gray-900 dark:text-white">No System Requests Found</div>
+                <div className="text-xs text-gray-400">No access requests have been created in the sandbox registry yet.</div>
+              </div>
+            ) : filteredRequests.length === 0 ? (
               <div className="p-12 text-center text-gray-400 flex flex-col items-center justify-center space-y-3">
                 <Search className="w-10 h-10 text-gray-300 dark:text-gray-650" />
                 <div className="font-semibold text-gray-500 dark:text-gray-400">No results found</div>
-                <div className="text-xs text-gray-400">No approved requests match your current search queries.</div>
+                <div className="text-xs text-gray-400">No requests match your current search queries or filters.</div>
                 <button
+                  type="button"
                   onClick={() => {
                     setSearchTerm('');
                     setSortBy('date-desc');
@@ -574,13 +628,13 @@ export default function AdminDashboard({
                 </button>
               </div>
             ) : (
-              filteredApproved.map(req => (
+              filteredRequests.map(req => (
                 <div 
                   key={req.id} 
                   className="p-5 hover:bg-gray-50/50 dark:hover:bg-gray-800/10 transition-colors flex flex-col sm:flex-row sm:items-center justify-between gap-4"
                 >
                   <div className="space-y-1">
-                    <div className="flex items-center gap-1.5">
+                    <div className="flex items-center gap-1.5 flex-wrap">
                       <span className="text-[10px] font-mono font-black text-blue-600 dark:text-blue-400 px-1.5 py-0.5 bg-blue-50 dark:bg-blue-900/30 rounded">
                         {req.id}
                       </span>
@@ -605,14 +659,44 @@ export default function AdminDashboard({
                     </div>
                   </div>
 
-                   <button
-                    type="button"
-                    onClick={() => onSelectRequest(req)}
-                    className="btn-primary-minimal text-xs font-medium shrink-0 px-4 py-2 bg-emerald-600 hover:bg-emerald-700 dark:bg-emerald-600 dark:hover:bg-emerald-700"
-                  >
-                    <Play className="w-3 h-3 fill-current" />
-                    <span>Provision Credentials</span>
-                  </button>
+                  <div className="flex items-center gap-2 shrink-0">
+                    {req.status !== 'Approved' && (
+                      <span className={`text-[10px] uppercase font-black px-2 py-0.5 rounded-full border ${
+                        req.status === 'Completed' ? 'bg-green-50 text-green-750 border-green-200 dark:bg-green-950/20 dark:text-green-400 dark:border-green-900/30' :
+                        req.status === 'Rejected' ? 'bg-red-50 text-red-750 border-red-200 dark:bg-red-950/20 dark:text-red-400 dark:border-red-900/30' :
+                        req.status === 'Under Review' ? 'bg-amber-50 text-amber-750 border-amber-200 dark:bg-amber-950/20 dark:text-amber-400 dark:border-amber-900/30' :
+                        'bg-indigo-50 text-indigo-755 border-indigo-200 dark:bg-indigo-950/20 dark:text-indigo-400 dark:border-indigo-900/30'
+                      }`}>
+                        {req.status}
+                      </span>
+                    )}
+                    
+                    <button
+                      type="button"
+                      onClick={() => onSelectRequest(req)}
+                      className={`text-xs font-bold shrink-0 px-4 py-2 rounded-xl text-white transition-all flex items-center space-x-1 ${
+                        req.status === 'Approved' ? 'bg-emerald-600 hover:bg-emerald-700 dark:bg-emerald-600 dark:hover:bg-emerald-700' :
+                        req.status === 'Completed' ? 'bg-gray-500 hover:bg-gray-600 dark:bg-gray-600 dark:hover:bg-gray-700' :
+                        req.status === 'Rejected' ? 'bg-rose-600 hover:bg-rose-700 dark:bg-rose-600 dark:hover:bg-rose-700' :
+                        'bg-blue-600 hover:bg-blue-700 dark:bg-blue-600 dark:hover:bg-blue-700'
+                      }`}
+                    >
+                      {req.status === 'Approved' ? (
+                        <>
+                          <Play className="w-3 h-3 fill-current" />
+                          <span>Provision Credentials</span>
+                        </>
+                      ) : (
+                        <>
+                          <Eye className="w-3 h-3 text-white" />
+                          <span>
+                            {req.status === 'Completed' ? 'View Details' :
+                             req.status === 'Rejected' ? 'View Rejection' : 'Inspect Request'}
+                          </span>
+                        </>
+                      )}
+                    </button>
+                  </div>
                 </div>
               ))
             )}
