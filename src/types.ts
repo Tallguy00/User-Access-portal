@@ -33,6 +33,11 @@ export interface UserProfile {
   createdAt: string;
   mfaEnabled?: boolean;
   notificationPreferences?: NotificationPreferences;
+  phoneNumber?: string;
+  jobTitle?: string;
+  employeeId?: string;
+  avatarUrl?: string;
+  lastLogin?: string;
 }
 
 export interface Department {
@@ -118,3 +123,41 @@ export interface SystemApplication {
   description: string;
   category: string;
 }
+
+export interface TicketComment {
+  id: string;
+  authorName: string;
+  authorEmail: string;
+  authorRole: UserRole;
+  text: string;
+  timestamp: string;
+  isInternal?: boolean;
+}
+
+export interface SupportTicket {
+  id: string;
+  userId: string;
+  userName: string;
+  userEmail: string;
+  userDepartmentId: string;
+  userRole: UserRole;
+  subject: string;
+  category: 'Login Issue' | 'Access Request' | 'Account Problem' | 'Technical Issue' | 'Password Reset' | 'Bug Report' | 'Other';
+  priority: 'Low' | 'Medium' | 'High';
+  status: 'Open' | 'In Progress' | 'Resolved' | 'Closed';
+  description: string;
+  attachmentName?: string;
+  attachmentSize?: string;
+  assignedToId?: string;
+  assignedToName?: string;
+  createdAt: string;
+  updatedAt: string;
+  comments: TicketComment[];
+  activityLogs: {
+    id: string;
+    action: string;
+    actorName: string;
+    timestamp: string;
+  }[];
+}
+

@@ -1,6 +1,6 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { AccessRequest, AccessType, PriorityLevel, Department, SystemApplication, UserProfile } from '../types';
-import { X, Upload, File, Plus, AlertCircle, Camera, Check, Sparkles, Loader2 } from 'lucide-react';
+import { X, Upload, File, Plus, AlertCircle, Camera, Check, Sparkles, Loader2, Save } from 'lucide-react';
 import { supabase } from '../supabaseClient';
 
 interface CreateRequestModalProps {
@@ -30,6 +30,83 @@ export default function CreateRequestModal({ isOpen, onClose, onSubmit, departme
   const [simulatedAttachments, setSimulatedAttachments] = useState<{ name: string; size: string; previewUrl?: string; filePath?: string }[]>([]);
   const [dragActive, setDragActive] = useState(false);
   const [validationError, setValidationError] = useState('');
+
+  // Draft States
+  const draftKey = `access_request_draft_${currentUser?.id || 'default'}`;
+  const [hasDraft, setHasDraft] = useState(false);
+  const [draftSavedFeedback, setDraftSavedFeedback] = useState(false);
+
+  // Check for existing draft when modal opens
+  useEffect(() => {
+    if (isOpen) {
+      try {
+        const saved = localStorage.getItem(draftKey);
+        if (saved) {
+          setHasDraft(true);
+        } else {
+          setHasDraft(false);
+        }
+      } catch (err) {
+        console.error("Error reading draft:", err);
+      }
+    }
+  }, [isOpen, draftKey]);
+
+  const handleSaveDraft = () => {
+    try {
+      const draftData = {
+        title,
+        accessType,
+        systemName,
+        requestedRole,
+        manager,
+        departmentId,
+        priority,
+        startDate,
+        endDate,
+        justification,
+        simulatedAttachments
+      };
+      localStorage.setItem(draftKey, JSON.stringify(draftData));
+      setDraftSavedFeedback(true);
+      setHasDraft(false); // Hide the restore banner since we just saved a fresh one
+      setTimeout(() => setDraftSavedFeedback(false), 3000);
+    } catch (err) {
+      console.error("Failed to save draft:", err);
+    }
+  };
+
+  const handleRestoreDraft = () => {
+    try {
+      const saved = localStorage.getItem(draftKey);
+      if (saved) {
+        const draft = JSON.parse(saved);
+        if (draft.title !== undefined) setTitle(draft.title);
+        if (draft.accessType !== undefined) setAccessType(draft.accessType);
+        if (draft.systemName !== undefined) setSystemName(draft.systemName);
+        if (draft.requestedRole !== undefined) setRequestedRole(draft.requestedRole);
+        if (draft.manager !== undefined) setManager(draft.manager);
+        if (draft.departmentId !== undefined) setDepartmentId(draft.departmentId);
+        if (draft.priority !== undefined) setPriority(draft.priority);
+        if (draft.startDate !== undefined) setStartDate(draft.startDate);
+        if (draft.endDate !== undefined) setEndDate(draft.endDate);
+        if (draft.justification !== undefined) setJustification(draft.justification);
+        if (draft.simulatedAttachments !== undefined) setSimulatedAttachments(draft.simulatedAttachments);
+      }
+      setHasDraft(false);
+    } catch (err) {
+      console.error("Failed to restore draft:", err);
+    }
+  };
+
+  const handleDiscardDraft = () => {
+    try {
+      localStorage.removeItem(draftKey);
+      setHasDraft(false);
+    } catch (err) {
+      console.error("Failed to discard draft:", err);
+    }
+  };
 
   const generateUUID = () => {
     if (typeof crypto !== 'undefined' && typeof crypto.randomUUID === 'function') {
@@ -566,7 +643,12 @@ export default function CreateRequestModal({ isOpen, onClose, onSubmit, departme
         attachments: simulatedAttachments.length > 0 ? simulatedAttachments : undefined
       });
 
-      // Reset status & Stop camera
+      // Reset status & Stop camera & Clear draft
+      try {
+        localStorage.removeItem(draftKey);
+      } catch (err) {
+        console.error("Error removing draft on submit:", err);
+      }
       setTitle('');
       setAccessType('New');
       setRequestedRole('');
@@ -603,7 +685,7 @@ export default function CreateRequestModal({ isOpen, onClose, onSubmit, departme
             onClick={onClose}
             className="p-2 text-gray-400 hover:text-gray-600 dark:hover:text-gray-200 hover:bg-gray-50 dark:hover:bg-gray-800 rounded-full transition-colors"
           >
-            
+            <X className="w-5 h-5" />
           </button>
         </div>
 
@@ -613,6 +695,33 @@ export default function CreateRequestModal({ isOpen, onClose, onSubmit, departme
             <div id="form-error" className="flex items-start gap-2 p-3.5 bg-red-50 dark:bg-red-950/30 border border-red-200 dark:border-red-900/50 rounded-xl text-red-700 dark:text-red-400 text-sm">
               <AlertCircle className="w-4 h-4 mt-0.5 shrink-0" />
               <span>{validationError}</span>
+            </div>
+          )}
+
+          {hasDraft && (
+            <div id="draft-restore-banner" className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 p-3.5 bg-blue-50/60 dark:bg-blue-950/30 border border-blue-200 dark:border-blue-900/50 rounded-xl text-blue-800 dark:text-blue-300 text-xs font-medium animate-pulse">
+              <div className="flex items-center gap-2">
+                <File className="w-4 h-4 text-[#0052cc] shrink-0" />
+                <span>You have an unsaved draft from a previous session. Would you like to restore it?</span>
+              </div>
+              <div className="flex items-center gap-2 shrink-0">
+                <button
+                  type="button"
+                  id="btn-restore-draft"
+                  onClick={handleRestoreDraft}
+                  className="px-2.5 py-1.5 bg-[#0052cc] hover:bg-blue-700 text-white font-bold rounded-lg transition-colors cursor-pointer text-[11px]"
+                >
+                  Restore Draft
+                </button>
+                <button
+                  type="button"
+                  id="btn-discard-draft"
+                  onClick={handleDiscardDraft}
+                  className="px-2.5 py-1.5 bg-white dark:bg-gray-800 hover:bg-gray-100 dark:hover:bg-gray-700 text-gray-700 dark:text-gray-300 font-bold rounded-lg border border-gray-200 dark:border-gray-700 transition-colors cursor-pointer text-[11px]"
+                >
+                  Discard
+                </button>
+              </div>
             </div>
           )}
 
@@ -708,7 +817,7 @@ export default function CreateRequestModal({ isOpen, onClose, onSubmit, departme
                       return isDeptManager || isAdmin;
                     })
                     .map(mgr => (
-                      <option key={mgr.id} value={mgr.fullName}>{mgr.fullName} </option>
+                      <option key={mgr.id} value={mgr.fullName}>{mgr.fullName} ({mgr.email})</option>
                     ))}
                 </select>
               ) : (
@@ -1102,6 +1211,12 @@ export default function CreateRequestModal({ isOpen, onClose, onSubmit, departme
 
         {/* Footer */}
         <div className="flex items-center justify-end gap-3 p-6 border-t border-gray-100 dark:border-gray-800 bg-gray-50/50 dark:bg-gray-950 rounded-b-2xl">
+          {draftSavedFeedback && (
+            <div id="draft-saved-feedback" className="mr-auto flex items-center gap-1.5 text-xs text-emerald-650 dark:text-emerald-400 font-bold bg-emerald-50 dark:bg-emerald-950/30 px-3 py-1.5 rounded-lg border border-emerald-200/50 dark:border-emerald-900/30">
+              <Check className="w-3.5 h-3.5" />
+              <span>Draft saved!</span>
+            </div>
+          )}
           <button
             id="cancel-request-btn"
             type="button"
@@ -1112,6 +1227,15 @@ export default function CreateRequestModal({ isOpen, onClose, onSubmit, departme
             className="btn-secondary-minimal py-2 px-4"
           >
             Cancel
+          </button>
+          <button
+            id="save-draft-btn"
+            type="button"
+            onClick={handleSaveDraft}
+            className="px-4 py-2 border border-gray-200 dark:border-gray-700 text-gray-700 dark:text-gray-300 rounded-xl hover:bg-gray-50 dark:hover:bg-gray-800 text-xs font-semibold flex items-center gap-1.5 transition-all cursor-pointer active:scale-98"
+          >
+            <Save className="w-4 h-4 text-gray-400" />
+            <span>Save Draft</span>
           </button>
           <button
             id="submit-request-btn"

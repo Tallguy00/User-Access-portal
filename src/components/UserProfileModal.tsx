@@ -105,7 +105,7 @@ export default function UserProfileModal({
             onClick={onClose}
             className="p-2 text-gray-400 hover:text-gray-650 dark:hover:text-gray-200 hover:bg-gray-50 dark:hover:bg-gray-800 rounded-full transition-colors bg-transparent"
           >
-            <X className="w-5 h-5 overflow-hidden" />
+            <X className="w-5 h-5" />
           </button>
         </div>
 
@@ -137,7 +137,7 @@ export default function UserProfileModal({
                 Full Display Name
               </label>
               <div className="relative">
-                <User className="absolute right-3 top-3 w-4 h-4 text-gray-400" />
+                <User className="absolute left-3 top-3 w-4 h-4 text-gray-400" />
                 <input
                   type="text"
                   required

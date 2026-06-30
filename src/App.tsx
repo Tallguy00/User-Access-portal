@@ -8,7 +8,8 @@ import {
   Department, 
   SystemApplication, 
   UserRole,
-  RequestStatus
+  RequestStatus,
+  SupportTicket
 } from './types';
 import { 
   INITIAL_DEPARTMENTS, 
@@ -32,8 +33,10 @@ import CreateRequestModal from './components/CreateRequestModal';
 import RequestDetailsModal from './components/RequestDetailsModal';
 import UserProfileModal from './components/UserProfileModal';
 import FAQView from './components/FAQView';
+import ProfileView from './components/ProfileView';
+import SupportView from './components/SupportView';
 
-import { ShieldCheck, Users, LayoutDashboard, FileBarChart, History, Settings, Sun, Moon, CheckCircle2, AlertCircle, HelpCircle } from 'lucide-react';
+import { ShieldCheck, Users, User, LayoutDashboard, FileBarChart, History, Settings, Sun, Moon, CheckCircle2, AlertCircle, HelpCircle, LifeBuoy } from 'lucide-react';
 
 export default function App() {
   // Theme state
@@ -56,16 +59,16 @@ export default function App() {
     
     // Seed initial organizational roster matching our test accounts
     return [
-      { id: 'user-ops-admin', fullName: 'IT Director Admin', email: 'admin@company.com', role: 'IT Admin', departmentId: 'dep-ops', status: 'Active', createdAt: '2026-06-01T00:00:00Z', mfaEnabled: true },
-      { id: 'user-super-admin', fullName: 'Chief Information Officer', email: 'super@company.com', role: 'Super Admin', departmentId: 'dep-ops', status: 'Active', createdAt: '2026-06-01T00:00:00Z', mfaEnabled: true },
-      { id: 'user-mgr-fin', fullName: 'Finance Manager', email: 'manager.fin@company.com', role: 'Manager', departmentId: 'dep-fin', status: 'Active', createdAt: '2026-06-01T00:00:00Z', mfaEnabled: true },
-      { id: 'user-mgr-eng', fullName: 'Engineering Manager', email: 'manager.eng@company.com', role: 'Manager', departmentId: 'dep-eng', status: 'Active', createdAt: '2026-06-01T00:00:00Z', mfaEnabled: true },
-      { id: 'user-mgr-hr', fullName: 'HR Manager', email: 'manager.hr@company.com', role: 'Manager', departmentId: 'dep-hr', status: 'Active', createdAt: '2026-06-01T00:00:00Z', mfaEnabled: true },
-      { id: 'user-mgr-mkt', fullName: 'Marketing Manager', email: 'manager.mkt@company.com', role: 'Manager', departmentId: 'dep-mkt', status: 'Active', createdAt: '2026-06-01T00:00:00Z', mfaEnabled: true },
-      { id: 'user-mgr-ops', fullName: 'Operations Manager', email: 'manager.ops@company.com', role: 'Manager', departmentId: 'dep-ops', status: 'Active', createdAt: '2026-06-01T00:00:00Z', mfaEnabled: true },
-      { id: 'user-emp-jane', fullName: 'Jane Smith', email: 'employee.jane@company.com', role: 'User', departmentId: 'dep-eng', status: 'Active', createdAt: '2026-06-05T00:00:00Z', mfaEnabled: true },
-      { id: 'user-emp-mark', fullName: 'Mark Fletcher', email: 'finance.mark@company.com', role: 'User', departmentId: 'dep-fin', status: 'Active', createdAt: '2026-06-06T00:00:00Z', mfaEnabled: true },
-      { id: 'user-emp-lucy', fullName: 'Lucy Thorne', email: 'hr.lucy@company.com', role: 'User', departmentId: 'dep-hr', status: 'Active', createdAt: '2026-06-07T00:00:00Z', mfaEnabled: true }
+      { id: 'user-ops-admin', fullName: 'IT Director Admin', email: 'admin@company.com', role: 'IT Admin', departmentId: 'dep-ops', status: 'Active', createdAt: '2026-06-01T00:00:00Z', mfaEnabled: true, employeeId: 'EMP-2026-1011', phoneNumber: '+1 (555) 019-1011', jobTitle: 'Director of Identity & Access Operations', lastLogin: '2026-06-30T09:00:00Z' },
+      { id: 'user-super-admin', fullName: 'Chief Information Officer', email: 'super@company.com', role: 'Super Admin', departmentId: 'dep-ops', status: 'Active', createdAt: '2026-06-01T00:00:00Z', mfaEnabled: true, employeeId: 'EMP-2026-1001', phoneNumber: '+1 (555) 019-1001', jobTitle: 'Chief Information Officer (CIO)', lastLogin: '2026-06-30T08:50:00Z' },
+      { id: 'user-mgr-fin', fullName: 'Finance Manager', email: 'manager.fin@company.com', role: 'Manager', departmentId: 'dep-fin', status: 'Active', createdAt: '2026-06-01T00:00:00Z', mfaEnabled: true, employeeId: 'EMP-2026-2001', phoneNumber: '+1 (555) 019-2001', jobTitle: 'VP of Finance & Control', lastLogin: '2026-06-30T08:30:00Z' },
+      { id: 'user-mgr-eng', fullName: 'Engineering Manager', email: 'manager.eng@company.com', role: 'Manager', departmentId: 'dep-eng', status: 'Active', createdAt: '2026-06-01T00:00:00Z', mfaEnabled: true, employeeId: 'EMP-2026-3001', phoneNumber: '+1 (555) 019-3001', jobTitle: 'VP of Product Engineering', lastLogin: '2026-06-30T08:45:00Z' },
+      { id: 'user-mgr-hr', fullName: 'HR Manager', email: 'manager.hr@company.com', role: 'Manager', departmentId: 'dep-hr', status: 'Active', createdAt: '2026-06-01T00:00:00Z', mfaEnabled: true, employeeId: 'EMP-2026-4001', phoneNumber: '+1 (555) 019-4001', jobTitle: 'Chief People Officer', lastLogin: '2026-06-30T08:15:00Z' },
+      { id: 'user-mgr-mkt', fullName: 'Marketing Manager', email: 'manager.mkt@company.com', role: 'Manager', departmentId: 'dep-mkt', status: 'Active', createdAt: '2026-06-01T00:00:00Z', mfaEnabled: true, employeeId: 'EMP-2026-5001', phoneNumber: '+1 (555) 019-5001', jobTitle: 'Director of Global Marketing', lastLogin: '2026-06-30T08:20:00Z' },
+      { id: 'user-mgr-ops', fullName: 'Operations Manager', email: 'manager.ops@company.com', role: 'Manager', departmentId: 'dep-ops', status: 'Active', createdAt: '2026-06-01T00:00:00Z', mfaEnabled: true, employeeId: 'EMP-2026-6001', phoneNumber: '+1 (555) 019-6001', jobTitle: 'Director of Business Operations', lastLogin: '2026-06-30T08:00:00Z' },
+      { id: 'user-emp-jane', fullName: 'Jane Smith', email: 'employee.jane@company.com', role: 'User', departmentId: 'dep-eng', status: 'Active', createdAt: '2026-06-05T00:00:00Z', mfaEnabled: true, employeeId: 'EMP-2026-3022', phoneNumber: '+1 (555) 019-3022', jobTitle: 'Senior Cloud Security Architect', lastLogin: '2026-06-30T07:45:00Z' },
+      { id: 'user-emp-mark', fullName: 'Mark Fletcher', email: 'finance.mark@company.com', role: 'User', departmentId: 'dep-fin', status: 'Active', createdAt: '2026-06-06T00:00:00Z', mfaEnabled: true, employeeId: 'EMP-2026-2051', phoneNumber: '+1 (555) 019-2051', jobTitle: 'Financial Compliance Auditor', lastLogin: '2026-06-30T07:30:00Z' },
+      { id: 'user-emp-lucy', fullName: 'Lucy Thorne', email: 'hr.lucy@company.com', role: 'User', departmentId: 'dep-hr', status: 'Active', createdAt: '2026-06-07T00:00:00Z', mfaEnabled: true, employeeId: 'EMP-2026-4034', phoneNumber: '+1 (555) 019-4034', jobTitle: 'HR Information Systems Admin', lastLogin: '2026-06-30T07:15:00Z' }
     ];
   });
 
@@ -88,8 +91,118 @@ export default function App() {
   const [departments] = useState<Department[]>(INITIAL_DEPARTMENTS);
   const [systems] = useState<SystemApplication[]>(INITIAL_SYSTEMS);
 
+  // Support Tickets State
+  const [tickets, setTickets] = useState<SupportTicket[]>(() => {
+    const saved = localStorage.getItem('ar_support_tickets');
+    if (saved) {
+      try {
+        return JSON.parse(saved);
+      } catch (e) {
+        console.error("Failed to parse ar_support_tickets:", e);
+      }
+    }
+    // Seed initial tickets
+    return [
+      {
+        id: 'TCK-2606-9481',
+        userId: 'user-emp-jane',
+        userName: 'Jane Smith',
+        userEmail: 'employee.jane@company.com',
+        userDepartmentId: 'dep-eng',
+        userRole: 'User',
+        subject: 'MFA Security Token Sync Failure',
+        category: 'Login Issue',
+        priority: 'High',
+        status: 'In Progress',
+        description: 'I am unable to authenticate with my hardware MFA key on the engineering gateway since this morning. It displays a "token signature invalid" error message. I\'ve cleared my browser cache but the error persists.',
+        assignedToId: 'user-ops-admin',
+        assignedToName: 'IT Director Admin',
+        createdAt: '2026-06-30T07:45:00Z',
+        updatedAt: '2026-06-30T08:00:00Z',
+        comments: [
+          {
+            id: 'c1',
+            authorName: 'IT Support System',
+            authorEmail: 'support@company.com',
+            authorRole: 'IT Admin',
+            text: 'System has assigned this ticket to IT Director Admin.',
+            timestamp: '2026-06-30T07:50:00Z',
+            isInternal: true
+          },
+          {
+            id: 'c2',
+            authorName: 'IT Director Admin',
+            authorEmail: 'admin@company.com',
+            authorRole: 'IT Admin',
+            text: 'Hi Jane, we are looking into the hardware token mapping in our central active directory. Please make sure you are logged in to the VPN first.',
+            timestamp: '2026-06-30T08:00:00Z',
+            isInternal: false
+          }
+        ],
+        activityLogs: [
+          { id: 'a1', action: 'Ticket Created', actorName: 'Jane Smith', timestamp: '2026-06-30T07:45:00Z' },
+          { id: 'a2', action: 'Assigned to IT Director Admin', actorName: 'System', timestamp: '2026-06-30T07:50:00Z' }
+        ]
+      },
+      {
+        id: 'TCK-2606-1205',
+        userId: 'user-emp-mark',
+        userName: 'Mark Fletcher',
+        userEmail: 'finance.mark@company.com',
+        userDepartmentId: 'dep-fin',
+        userRole: 'User',
+        subject: 'Financial Audit Folder Read Permissions',
+        category: 'Access Request',
+        priority: 'Medium',
+        status: 'Open',
+        description: 'I need read access to the Q2 Audit subfolders on the finance department secure share. The manager approved the internal request, but the directory permissions have not been synchronized.',
+        createdAt: '2026-06-30T07:30:00Z',
+        updatedAt: '2026-06-30T07:30:00Z',
+        comments: [],
+        activityLogs: [
+          { id: 'a1', action: 'Ticket Created', actorName: 'Mark Fletcher', timestamp: '2026-06-30T07:30:00Z' }
+        ]
+      },
+      {
+        id: 'TCK-2606-3392',
+        userId: 'user-emp-lucy',
+        userName: 'Lucy Thorne',
+        userEmail: 'hr.lucy@company.com',
+        userDepartmentId: 'dep-hr',
+        userRole: 'User',
+        subject: 'Department Manager Change Propagation',
+        category: 'Account Problem',
+        priority: 'Low',
+        status: 'Resolved',
+        description: 'Our department manager\'s email list needs to be updated. The new director has joined, but the approval routing rules still target the previous manager. Could you please check the department hierarchy mappings?',
+        createdAt: '2026-06-30T07:15:00Z',
+        updatedAt: '2026-06-30T08:15:00Z',
+        comments: [
+          {
+            id: 'c1',
+            authorName: 'Chief Information Officer',
+            authorEmail: 'super@company.com',
+            authorRole: 'Super Admin',
+            text: 'Hierarchy routing mapping updated successfully. The approval nodes are now routing to the correct director.',
+            timestamp: '2026-06-30T08:15:00Z',
+            isInternal: false
+          }
+        ],
+        activityLogs: [
+          { id: 'a1', action: 'Ticket Created', actorName: 'Lucy Thorne', timestamp: '2026-06-30T07:15:00Z' },
+          { id: 'a2', action: 'Status Changed to Resolved', actorName: 'Chief Information Officer', timestamp: '2026-06-30T08:15:00Z' }
+        ]
+      }
+    ];
+  });
+
+  // Sync tickets to local storage on changes
+  useEffect(() => {
+    localStorage.setItem('ar_support_tickets', JSON.stringify(tickets));
+  }, [tickets]);
+
   // Layout Tab select
-  const [activeTab, setActiveTab] = useState<'dashboard' | 'users' | 'audit_logs' | 'reports' | 'faq'>('dashboard');
+  const [activeTab, setActiveTab] = useState<'dashboard' | 'users' | 'audit_logs' | 'reports' | 'faq' | 'profile' | 'support'>('dashboard');
 
   // Modals view controllers
   const [isCreateRequestOpen, setIsCreateRequestOpen] = useState(false);
@@ -255,7 +368,12 @@ export default function App() {
               status: item.status as any,
               createdAt: item.created_at,
               mfaEnabled: item.mfa_enabled,
-              notificationPreferences: item.notification_preferences
+              notificationPreferences: item.notification_preferences,
+              phoneNumber: item.phone_number,
+              jobTitle: item.job_title,
+              employeeId: item.employee_id,
+              avatarUrl: item.avatar_url,
+              lastLogin: item.last_login
             };
           });
           
@@ -505,10 +623,30 @@ export default function App() {
     setCurrentPage('dashboard');
     setActiveTab('dashboard');
 
-    // Detect role for log context mapping
+    // Detect role for log context mapping and update lastLogin
     const safeProfiles = Array.isArray(profiles) ? profiles.filter(Boolean) : [];
     const foundProfile = safeProfiles.find(p => p.email.toLowerCase() === authenticatedEmail.toLowerCase());
     const matchedRole = foundProfile?.role || 'User';
+
+    if (foundProfile) {
+      const loginTime = new Date().toISOString();
+      const updatedWithLogin: UserProfile = {
+        ...foundProfile,
+        lastLogin: loginTime
+      };
+      
+      setCurrentUser(updatedWithLogin);
+      setProfiles(prev => prev.map(p => p.id === foundProfile.id ? updatedWithLogin : p));
+      
+      try {
+        await supabase
+          .from('profiles')
+          .update({ last_login: loginTime })
+          .eq('id', foundProfile.id);
+      } catch (err) {
+        console.error("Failed to update last login in Supabase:", err);
+      }
+    }
 
     // Create Audit entry for login
     logAuditEvent(
@@ -1314,11 +1452,16 @@ export default function App() {
             department_id: updatedProfile.departmentId,
             status: updatedProfile.status,
             mfa_enabled: updatedProfile.mfaEnabled || false,
-            notification_preferences: updatedProfile.notificationPreferences || {}
+            notification_preferences: updatedProfile.notificationPreferences || {},
+            phone_number: updatedProfile.phoneNumber,
+            job_title: updatedProfile.jobTitle,
+            employee_id: updatedProfile.employeeId,
+            avatar_url: updatedProfile.avatarUrl,
+            last_login: updatedProfile.lastLogin
           })
           .eq('id', updatedProfile.id);
         if (error) {
-          console.error("Error saving profile to DB:", error);
+          console.error("Error saving profile to DB (might be missing custom columns, falling back to local state):", error);
         }
       } catch (err) {
         console.error("Failed to save profile to DB:", err);
@@ -1337,6 +1480,128 @@ export default function App() {
       'Your profile settings and notification rules were successfully updated in the IAM directory.',
       'security'
     );
+  };
+
+  const handleAddTicket = (ticket: SupportTicket) => {
+    setTickets((prev) => [ticket, ...prev]);
+
+    logAuditEvent(
+      ticket.userEmail,
+      ticket.userRole,
+      'Support Ticket Submitted',
+      `Submitted support ticket ${ticket.id} under category ${ticket.category} with priority ${ticket.priority}`
+    );
+
+    addNotification(
+      ticket.userEmail,
+      `Your support ticket ${ticket.id}: "${ticket.subject}" has been submitted successfully to the Help Desk.`,
+      'info_requested'
+    );
+
+    const itStaff = profiles.filter(p => p.role === 'IT Admin' || p.role === 'Super Admin' || p.role === 'IT Support');
+    itStaff.forEach(staff => {
+      if (staff.email.toLowerCase() !== ticket.userEmail.toLowerCase()) {
+        addNotification(
+          staff.email,
+          `⚠️ New Support Ticket [${ticket.id}] from ${ticket.userName}: "${ticket.subject}" (Priority: ${ticket.priority})`,
+          'info_requested'
+        );
+      }
+    });
+  };
+
+  const handleUpdateTicket = (updatedTicket: SupportTicket) => {
+    const prevTicket = tickets.find(t => t.id === updatedTicket.id);
+    if (!prevTicket) return;
+
+    setTickets((prev) => prev.map((t) => (t.id === updatedTicket.id ? updatedTicket : t)));
+
+    // 1. Status transition check
+    if (prevTicket.status !== updatedTicket.status) {
+      logAuditEvent(
+        currentUser?.email || 'system',
+        currentUser?.role || 'User',
+        'Support Ticket Status Updated',
+        `Ticket ${updatedTicket.id} status changed from ${prevTicket.status} to ${updatedTicket.status}`
+      );
+
+      addNotification(
+        updatedTicket.userEmail,
+        `🔄 Ticket [${updatedTicket.id}] status updated to: ${updatedTicket.status}`,
+        'info_requested'
+      );
+    }
+
+    // 2. Ticket Assignment check
+    if (prevTicket.assignedToId !== updatedTicket.assignedToId) {
+      logAuditEvent(
+        currentUser?.email || 'system',
+        currentUser?.role || 'User',
+        'Support Ticket Assigned',
+        `Ticket ${updatedTicket.id} assigned to ${updatedTicket.assignedToName || 'Unassigned'}`
+      );
+
+      if (updatedTicket.assignedToId) {
+        const staff = profiles.find(p => p.id === updatedTicket.assignedToId);
+        if (staff) {
+          addNotification(
+            staff.email,
+            `📥 You have been assigned support ticket [${updatedTicket.id}]: "${updatedTicket.subject}"`,
+            'info_requested'
+          );
+        }
+      }
+
+      addNotification(
+        updatedTicket.userEmail,
+        `👤 Ticket [${updatedTicket.id}] has been assigned to IT Agent: ${updatedTicket.assignedToName || 'Unassigned'}`,
+        'info_requested'
+      );
+    }
+
+    // 3. New Response check
+    if (updatedTicket.comments.length > prevTicket.comments.length) {
+      const latestComment = updatedTicket.comments[updatedTicket.comments.length - 1];
+      
+      logAuditEvent(
+        latestComment.authorEmail,
+        latestComment.authorRole,
+        latestComment.isInternal ? 'Support Ticket Internal Note Added' : 'Support Ticket Reply Posted',
+        `Added reply to ticket ${updatedTicket.id}`
+      );
+
+      if (!latestComment.isInternal) {
+        if (latestComment.authorEmail.toLowerCase() !== updatedTicket.userEmail.toLowerCase()) {
+          addNotification(
+            updatedTicket.userEmail,
+            `💬 Ticket [${updatedTicket.id}] received a response from IT Staff (${latestComment.authorName})`,
+            'info_requested'
+          );
+        } else {
+          if (updatedTicket.assignedToId) {
+            const staff = profiles.find(p => p.id === updatedTicket.assignedToId);
+            if (staff) {
+              addNotification(
+                staff.email,
+                `💬 Client response received on [${updatedTicket.id}] from ${updatedTicket.userName}`,
+                'info_requested'
+              );
+            }
+          } else {
+            const itStaff = profiles.filter(p => p.role === 'IT Admin' || p.role === 'Super Admin' || p.role === 'IT Support');
+            itStaff.forEach(staff => {
+              if (staff.email.toLowerCase() !== updatedTicket.userEmail.toLowerCase()) {
+                addNotification(
+                  staff.email,
+                  `💬 Client response on unassigned Ticket [${updatedTicket.id}] from ${updatedTicket.userName}`,
+                  'info_requested'
+                );
+              }
+            });
+          }
+        }
+      }
+    }
   };
 
   // Notification mark as reads
@@ -1461,6 +1726,7 @@ export default function App() {
         globalSearchTerm={globalSearchTerm}
         setGlobalSearchTerm={setGlobalSearchTerm}
         onOpenProfile={() => setIsProfileOpen(true)}
+        onSelectProfileTab={() => setActiveTab('profile')}
       />
 
       <div className="flex flex-col lg:flex-row min-h-[calc(100vh-5rem)]">
@@ -1499,6 +1765,34 @@ export default function App() {
               >
                 <HelpCircle className="w-4 h-4 shrink-0" />
                 <span>Frequently Asked Questions</span>
+              </button>
+
+              {/* Profile & Security Tab Button */}
+              <button
+                id="btn-nav-profile"
+                onClick={() => setActiveTab('profile')}
+                className={`w-full flex items-center gap-3 px-4 py-3 text-xs font-semibold transition-all rounded-xl ${
+                  activeTab === 'profile'
+                    ? 'text-white bg-[#0052cc] shadow-md shadow-blue-900/10'
+                    : 'text-gray-400 hover:text-white hover:bg-white/5 border-transparent'
+                }`}
+              >
+                <User className="w-4 h-4 shrink-0" />
+                <span>Profile & Security</span>
+              </button>
+
+              {/* Support & Help Desk Tab Button */}
+              <button
+                id="btn-nav-support"
+                onClick={() => setActiveTab('support')}
+                className={`w-full flex items-center gap-3 px-4 py-3 text-xs font-semibold transition-all rounded-xl ${
+                  activeTab === 'support'
+                    ? 'text-white bg-[#0052cc] shadow-md shadow-blue-900/10'
+                    : 'text-gray-400 hover:text-white hover:bg-white/5 border-transparent'
+                }`}
+              >
+                <LifeBuoy className="w-4 h-4 shrink-0 text-emerald-400" />
+                <span>Support & Help Desk</span>
               </button>
 
               {/* Only show User Directory, Auditing, Reports for Admin contexts */}
@@ -1608,6 +1902,30 @@ export default function App() {
 
           {activeTab === 'faq' && (
             <FAQView />
+          )}
+
+          {activeTab === 'support' && currentUser && (
+            <SupportView
+              currentUser={currentUser}
+              profiles={profiles}
+              departments={departments}
+              tickets={tickets}
+              onAddTicket={handleAddTicket}
+              onUpdateTicket={handleUpdateTicket}
+              onOpenFAQ={() => setActiveTab('faq')}
+              showToast={showToast}
+            />
+          )}
+
+          {activeTab === 'profile' && currentUser && (
+            <ProfileView
+              currentUser={currentUser}
+              departments={departments}
+              profiles={profiles}
+              auditLogs={auditLogs}
+              onSaveProfile={handleSaveProfile}
+              showToast={showToast}
+            />
           )}
 
         </main>
