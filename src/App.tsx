@@ -541,6 +541,75 @@ export default function App() {
     fetchNotificationsFromDB();
   }, [currentUser]);
 
+  // Load real support tickets from Supabase DB on user sign-in/mount
+  const fetchTicketsFromDB = useCallback(async () => {
+    if (!currentUser) return;
+    try {
+      const { data, error } = await supabase
+        .from('support_tickets')
+        .select('*')
+        .order('created_at', { ascending: false });
+
+      if (error) {
+        console.warn("Could not fetch support tickets from database (it might not be provisioned yet):", error.message);
+        return;
+      }
+
+      if (data) {
+        const mappedTickets: SupportTicket[] = data.map(item => ({
+          id: item.id,
+          userId: item.user_id,
+          userName: item.user_name,
+          userEmail: item.user_email,
+          userDepartmentId: item.user_department_id || '',
+          userRole: item.user_role as any,
+          subject: item.subject,
+          category: item.category as any,
+          priority: item.priority as any,
+          status: item.status as any,
+          description: item.description,
+          attachmentName: item.attachment_name || undefined,
+          attachmentSize: item.attachment_size || undefined,
+          assignedToId: item.assigned_to_id || undefined,
+          assignedToName: item.assigned_to_name || undefined,
+          createdAt: item.created_at,
+          updatedAt: item.updated_at,
+          comments: item.comments || [],
+          activityLogs: item.activity_logs || []
+        }));
+
+        setTickets(mappedTickets);
+      }
+    } catch (err) {
+      console.warn("Failed to load tickets from Supabase DB:", err);
+    }
+  }, [currentUser]);
+
+  useEffect(() => {
+    fetchTicketsFromDB();
+
+    if (!currentUser) return;
+
+    // Real-time Supabase subscription to automatically refresh the user's tickets list
+    const channel = supabase
+      .channel('realtime:support_tickets')
+      .on(
+        'postgres_changes',
+        { event: '*', schema: 'public', table: 'support_tickets' },
+        (payload) => {
+          console.log('Real-time ticket update detected:', payload);
+          fetchTicketsFromDB();
+        }
+      )
+      .subscribe();
+
+    return () => {
+      if (channel) {
+        supabase.removeChannel(channel);
+      }
+    };
+  }, [fetchTicketsFromDB, currentUser]);
+
   // Handle active session loading
   useEffect(() => {
     if (sessionUserEmail) {
@@ -1482,7 +1551,39 @@ export default function App() {
     );
   };
 
-  const handleAddTicket = (ticket: SupportTicket) => {
+  const handleAddTicket = async (ticket: SupportTicket) => {
+    try {
+      const { error } = await supabase
+        .from('support_tickets')
+        .insert({
+          id: ticket.id,
+          user_id: ticket.userId,
+          user_name: ticket.userName,
+          user_email: ticket.userEmail,
+          user_department_id: ticket.userDepartmentId || null,
+          user_role: ticket.userRole,
+          subject: ticket.subject,
+          category: ticket.category,
+          priority: ticket.priority,
+          status: ticket.status,
+          description: ticket.description,
+          attachment_name: ticket.attachmentName || null,
+          attachment_size: ticket.attachmentSize || null,
+          assigned_to_id: ticket.assignedToId || null,
+          assigned_to_name: ticket.assignedToName || null,
+          created_at: ticket.createdAt,
+          updated_at: ticket.updatedAt,
+          comments: ticket.comments,
+          activity_logs: ticket.activityLogs
+        });
+      
+      if (error) {
+        console.warn("Could not insert support ticket to database:", error.message);
+      }
+    } catch (err) {
+      console.warn("Exception inserting support ticket to database:", err);
+    }
+
     setTickets((prev) => [ticket, ...prev]);
 
     logAuditEvent(
@@ -1510,9 +1611,29 @@ export default function App() {
     });
   };
 
-  const handleUpdateTicket = (updatedTicket: SupportTicket) => {
+  const handleUpdateTicket = async (updatedTicket: SupportTicket) => {
     const prevTicket = tickets.find(t => t.id === updatedTicket.id);
     if (!prevTicket) return;
+
+    try {
+      const { error } = await supabase
+        .from('support_tickets')
+        .update({
+          status: updatedTicket.status,
+          assigned_to_id: updatedTicket.assignedToId || null,
+          assigned_to_name: updatedTicket.assignedToName || null,
+          updated_at: updatedTicket.updatedAt,
+          comments: updatedTicket.comments,
+          activity_logs: updatedTicket.activityLogs
+        })
+        .eq('id', updatedTicket.id);
+
+      if (error) {
+        console.warn("Could not update support ticket in database:", error.message);
+      }
+    } catch (err) {
+      console.warn("Exception updating support ticket in database:", err);
+    }
 
     setTickets((prev) => prev.map((t) => (t.id === updatedTicket.id ? updatedTicket : t)));
 
