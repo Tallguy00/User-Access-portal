@@ -6,6 +6,7 @@ import {
   Send, UserCheck, Inbox, Info, HelpCircle, FileText, Check, 
   Trash2, AlertTriangle, MessageCircle, RefreshCw, Layers
 } from 'lucide-react';
+import SearchInput from './SearchInput';
 
 interface SupportViewProps {
   currentUser: UserProfile;
@@ -30,10 +31,11 @@ export default function SupportView({
 }: SupportViewProps) {
   // Determine if user has administrative rights for support desk
   const isAdmin = currentUser.role === 'IT Admin' || currentUser.role === 'Super Admin' || currentUser.role === 'IT Support';
+  const isManager = currentUser.role === 'Manager' || currentUser.role === 'Department Manager' || currentUser.fullName.toLowerCase().includes('manager');
 
   // Tabs: 'portal' (Standard User Contact/Submit & My Tickets) or 'management' (IT Staff Queue)
   const [activeView, setActiveView] = useState<'portal' | 'management'>(
-    isAdmin ? 'management' : 'portal'
+    (isAdmin || isManager) ? 'management' : 'portal'
   );
 
   // Search & Filter State
@@ -163,7 +165,7 @@ export default function SupportView({
     if (!selectedTicket || !newComment.trim()) return;
 
     const commentId = `cmt-${Math.random().toString(36).substr(2, 9)}`;
-    const isNote = isAdmin && isInternalComment;
+    const isNote = (isAdmin || selectedTicket?.assignedToId === currentUser.id) && isInternalComment;
 
     const comment: TicketComment = {
       id: commentId,
@@ -283,13 +285,21 @@ export default function SupportView({
 
   // Filter logic for standard user tickets vs IT admin queue
   const displayTickets = tickets.filter(ticket => {
-    // Permission barrier: Standard users only see their own tickets
-    if (!isAdmin && ticket.userEmail.toLowerCase() !== currentUser.email.toLowerCase()) {
+    const isOwner = ticket.userEmail.toLowerCase() === currentUser.email.toLowerCase();
+    const isAssignedToMe = ticket.assignedToId === currentUser.id;
+
+    // Permission barrier: Standard users/managers only see their own tickets or those assigned to them
+    if (!isAdmin && !isOwner && !isAssignedToMe) {
       return false;
     }
 
-    // Standard filter for portal: standard users see only their own, unless toggled to portal as Admin
-    if (activeView === 'portal' && ticket.userEmail.toLowerCase() !== currentUser.email.toLowerCase()) {
+    // Standard filter for portal: standard users see only their own
+    if (activeView === 'portal' && !isOwner) {
+      return false;
+    }
+
+    // Filter for management queue: managers and standard users see only tickets assigned to them
+    if (activeView === 'management' && !isAdmin && !isAssignedToMe) {
       return false;
     }
 
@@ -351,7 +361,7 @@ export default function SupportView({
         </div>
 
         {/* Admin/User view toggles */}
-        {isAdmin && (
+        {(isAdmin || isManager) && (
           <div className="bg-gray-100 dark:bg-gray-850 p-1 rounded-xl flex border border-gray-200 dark:border-gray-800 shrink-0">
             <button
               onClick={() => {
@@ -364,7 +374,7 @@ export default function SupportView({
                   : 'text-gray-500 hover:text-gray-850 dark:text-gray-450 dark:hover:text-gray-200'
               }`}
             >
-              Support Desk Queue
+              {isAdmin ? "Support Desk Queue" : "Supporting Dashboard"}
             </button>
             <button
               onClick={() => {
@@ -630,7 +640,7 @@ export default function SupportView({
                   {selectedTicket.status !== 'Closed' ? (
                     <form onSubmit={handleAddComment} className="border-t border-gray-100 dark:border-gray-850 pt-4 mt-3 space-y-3">
                       
-                      {isAdmin && (
+                      {(isAdmin || selectedTicket.assignedToId === currentUser.id) && (
                         <div className="flex items-center gap-2">
                           <label className="flex items-center gap-1.5 text-[10px] font-bold text-gray-500 cursor-pointer select-none">
                             <input 
@@ -701,8 +711,8 @@ export default function SupportView({
                     </div>
                   </div>
 
-                  {/* IT ADMIN INTERACTIVE ACTIONS - Visible only to admins */}
-                  {isAdmin ? (
+                  {/* IT ADMIN INTERACTIVE ACTIONS - Visible only to admins or the assigned agent */}
+                  {(isAdmin || selectedTicket.assignedToId === currentUser.id) ? (
                     <div className="space-y-4 border-t border-gray-100 dark:border-gray-850 pt-5">
                       <h4 className="text-[10px] font-black uppercase text-gray-400 dark:text-gray-500 tracking-wider flex items-center gap-1">
                         <Shield className="w-3.5 h-3.5 text-blue-600 dark:text-blue-400" />
@@ -988,16 +998,13 @@ export default function SupportView({
                   <div className="flex flex-col gap-3.5 md:flex-row md:items-center justify-between">
                     
                     {/* Searches */}
-                    <div className="relative flex-1 max-w-md">
-                      <Search className="absolute left-3.5 top-3 w-4 h-4 text-gray-400" />
-                      <input
-                        type="text"
-                        placeholder={activeView === 'portal' ? "Search my tickets by keyword or ID..." : "Search support tickets..."}
-                        value={searchTerm}
-                        onChange={(e) => setSearchTerm(e.target.value)}
-                        className="w-full pl-10 pr-4 py-2.5 bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-750 rounded-xl text-xs text-gray-950 dark:text-white focus:outline-none focus:ring-1.5 focus:ring-blue-500 transition-all"
-                      />
-                    </div>
+                    <SearchInput
+                      id="support-ticket-search"
+                      value={searchTerm}
+                      onChange={setSearchTerm}
+                      placeholder={activeView === 'portal' ? "Search my tickets by keyword or ID..." : "Search support tickets..."}
+                      containerClassName="max-w-md"
+                    />
 
                     {/* Submit ticket for Standard users */}
                     {activeView === 'portal' && (

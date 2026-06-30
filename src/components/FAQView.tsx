@@ -22,6 +22,7 @@ import {
   ArrowRight
 } from 'lucide-react';
 import HighlightText from './HighlightText';
+import SearchInput from './SearchInput';
 
 export type FAQCategory = 
   | 'Account' 
@@ -255,32 +256,15 @@ export default function FAQView() {
       <div className="bg-white dark:bg-gray-900 border border-gray-100 dark:border-gray-800 rounded-2xl p-5 shadow-sm space-y-4">
         
         {/* Search bar */}
-        <div className="relative">
-          <Search className="absolute left-4 top-3.5 w-4 h-4 text-gray-400" />
-          <input
-            id="faq-search"
-            type="text"
-            placeholder="Search FAQs by keywords (e.g. 'rejection', 'status', 'password')..."
-            value={searchTerm}
-            onChange={(e) => {
-              setSearchTerm(e.target.value);
-              setExpandedId(null); // Collapse when searching to avoid layout jumps
-            }}
-            className="pl-11 pr-10 py-3 w-full bg-gray-50 dark:bg-gray-800/50 border border-gray-200 dark:border-gray-700 rounded-xl text-sm text-gray-950 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500 dark:focus:ring-blue-600 transition-all placeholder-gray-400 dark:placeholder-gray-500"
-          />
-          {searchTerm && (
-            <button
-              onClick={() => {
-                setSearchTerm('');
-                setExpandedId(null);
-              }}
-              className="absolute right-4 top-3.5 text-gray-400 hover:text-gray-600 dark:hover:text-gray-200 transition-colors"
-              aria-label="Clear search"
-            >
-              <X className="w-4 h-4" />
-            </button>
-          )}
-        </div>
+        <SearchInput
+          id="faq-search"
+          value={searchTerm}
+          onChange={(val) => {
+            setSearchTerm(val);
+            setExpandedId(null); // Collapse when searching to avoid layout jumps
+          }}
+          placeholder="Search FAQs by keywords (e.g. 'rejection', 'status', 'password')..."
+        />
 
         {/* Categories Pills */}
         <div className="space-y-2">

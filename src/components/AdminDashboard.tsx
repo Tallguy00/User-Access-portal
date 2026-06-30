@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { AccessRequest, UserProfile, Department, RequestStatus } from '../types';
 import { ShieldAlert, Cpu, KeyRound, CheckSquare, Search, Lock, AlertTriangle, Play, CheckCircle, BarChart2, TrendingUp, Calendar as CalendarIcon, Download, FileSpreadsheet, Eye, FileText } from 'lucide-react';
 import HighlightText from './HighlightText';
+import SearchInput from './SearchInput';
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, BarChart, Bar, Cell, PieChart, Pie, Legend } from 'recharts';
 
 interface AdminDashboardProps {
@@ -560,16 +561,13 @@ export default function AdminDashboard({
               </div>
 
               <div className="flex items-center gap-2 flex-wrap">
-                <div className="relative">
-                  <Search className="absolute left-3.5 top-2.5 w-4 h-4 text-gray-400" />
-                  <input
-                    type="text"
-                    placeholder={activeQueueTab === 'approved' ? "Search approved..." : "Search all requests..."}
-                    value={searchTerm}
-                    onChange={(e) => setSearchTerm(e.target.value)}
-                    className="pl-10 pr-4 py-1.5 w-full sm:w-52 bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg text-xs text-gray-900 dark:text-white focus:outline-none focus:ring-1 focus:ring-blue-500"
-                  />
-                </div>
+                <SearchInput
+                  value={searchTerm}
+                  onChange={setSearchTerm}
+                  placeholder={activeQueueTab === 'approved' ? "Search approved..." : "Search all requests..."}
+                  id="admin-dashboard-search"
+                  containerClassName="w-full sm:w-52"
+                />
 
                 <select
                   value={sortBy}

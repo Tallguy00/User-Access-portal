@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { UserProfile, UserRole, AppNotification } from '../types';
 import { Bell, Key, LogOut, ShieldAlert, CheckSquare, Sparkles, User, RefreshCw, Layers, Search, Settings, X } from 'lucide-react';
+import SearchInput from './SearchInput';
 
 interface HeaderProps {
   currentUser: UserProfile | null;
@@ -67,24 +68,13 @@ export default function Header({
 
       {/* Top Navigation Search Input */}
       {currentUser && setGlobalSearchTerm && (
-        <div className="flex-1 max-w-sm mx-4 relative hidden md:block">
-          <Search className="absolute left-3 top-2.5 w-3.5 h-3.5 text-gray-400 pointer-events-none" />
-          <input
-            type="text"
-            placeholder="Search active requests by title or system..."
+        <div className="flex-1 max-w-sm mx-4 hidden md:block">
+          <SearchInput
             value={globalSearchTerm}
-            onChange={(e) => setGlobalSearchTerm(e.target.value)}
-            className="pl-9 pr-9 py-1.5 w-full bg-gray-50 dark:bg-gray-800/50 border border-gray-200 dark:border-gray-800 rounded-xl text-xs text-gray-950 dark:text-gray-150 placeholder:text-gray-400 focus:outline-none focus:ring-1 focus:ring-blue-500 transition-all shadow-sm"
+            onChange={setGlobalSearchTerm}
+            placeholder="Search active requests by title or system..."
+            id="global-header-search"
           />
-          {globalSearchTerm && (
-            <button 
-              onClick={() => setGlobalSearchTerm('')}
-              className="absolute right-2.5 top-2.5 text-gray-400 hover:text-gray-600 dark:hover:text-gray-200 transition-colors cursor-pointer"
-              aria-label="Clear search"
-            >
-              <X className="w-3.5 h-3.5" />
-            </button>
-          )}
         </div>
       )}
 

@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { AccessRequest, ApprovalAction, UserProfile } from '../types';
 import { ClipboardCheck, Users, HelpCircle, CheckCircle, Search, Filter, MessageSquare, ArrowUpRight, BarChart2, CheckSquare, Clock, AlertTriangle } from 'lucide-react';
 import HighlightText from './HighlightText';
+import SearchInput from './SearchInput';
 
 interface ManagerDashboardProps {
   requests: AccessRequest[];
@@ -232,16 +233,13 @@ export default function ManagerDashboard({
             </div>
 
             <div className="flex items-center gap-2 flex-wrap">
-              <div className="relative">
-                <Search className="absolute left-3.5 top-2.5 w-4 h-4 text-gray-400" />
-                <input
-                  type="text"
-                  placeholder="Filter by title or user..."
-                  value={searchTerm}
-                  onChange={(e) => setSearchTerm(e.target.value)}
-                  className="pl-10 pr-4 py-1.5 w-full sm:w-52 md:w-60 bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg text-xs text-gray-900 dark:text-white focus:outline-none focus:ring-1 focus:ring-blue-500"
-                />
-              </div>
+              <SearchInput
+                value={searchTerm}
+                onChange={setSearchTerm}
+                placeholder="Filter by title or user..."
+                id="manager-dashboard-search"
+                containerClassName="w-full sm:w-52 md:w-60"
+              />
 
               <select
                 value={priorityFilter}

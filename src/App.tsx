@@ -1552,29 +1552,62 @@ export default function App() {
   };
 
   const handleAddTicket = async (ticket: SupportTicket) => {
+    // Auto-assignment logic: find appropriate IT Admin/Support based on department
+    let assignedAdmin = profiles.find(p => p.role === 'IT Admin' && p.departmentId === ticket.userDepartmentId);
+    if (!assignedAdmin) {
+      assignedAdmin = profiles.find(p => p.role === 'IT Support' && p.departmentId === ticket.userDepartmentId);
+    }
+    if (!assignedAdmin) {
+      assignedAdmin = profiles.find(p => p.role === 'IT Admin');
+    }
+    if (!assignedAdmin) {
+      assignedAdmin = profiles.find(p => p.role === 'IT Support');
+    }
+    if (!assignedAdmin) {
+      assignedAdmin = profiles.find(p => p.role === 'Super Admin');
+    }
+
+    const assignedToId = assignedAdmin ? assignedAdmin.id : undefined;
+    const assignedToName = assignedAdmin ? assignedAdmin.fullName : undefined;
+
+    const assignedTicket: SupportTicket = {
+      ...ticket,
+      assignedToId,
+      assignedToName,
+      activityLogs: assignedAdmin ? [
+        ...ticket.activityLogs,
+        {
+          id: `act-${Math.random().toString(36).substr(2, 9)}`,
+          action: `Auto-assigned to IT Admin: ${assignedAdmin.fullName} based on Department`,
+          actorName: 'System Auto-Assign',
+          timestamp: new Date().toISOString()
+        }
+      ] : ticket.activityLogs
+    };
+
     try {
       const { error } = await supabase
         .from('support_tickets')
         .insert({
-          id: ticket.id,
-          user_id: ticket.userId,
-          user_name: ticket.userName,
-          user_email: ticket.userEmail,
-          user_department_id: ticket.userDepartmentId || null,
-          user_role: ticket.userRole,
-          subject: ticket.subject,
-          category: ticket.category,
-          priority: ticket.priority,
-          status: ticket.status,
-          description: ticket.description,
-          attachment_name: ticket.attachmentName || null,
-          attachment_size: ticket.attachmentSize || null,
-          assigned_to_id: ticket.assignedToId || null,
-          assigned_to_name: ticket.assignedToName || null,
-          created_at: ticket.createdAt,
-          updated_at: ticket.updatedAt,
-          comments: ticket.comments,
-          activity_logs: ticket.activityLogs
+          id: assignedTicket.id,
+          user_id: assignedTicket.userId,
+          user_name: assignedTicket.userName,
+          user_email: assignedTicket.userEmail,
+          user_department_id: assignedTicket.userDepartmentId || null,
+          user_role: assignedTicket.userRole,
+          subject: assignedTicket.subject,
+          category: assignedTicket.category,
+          priority: assignedTicket.priority,
+          status: assignedTicket.status,
+          description: assignedTicket.description,
+          attachment_name: assignedTicket.attachmentName || null,
+          attachment_size: assignedTicket.attachmentSize || null,
+          assigned_to_id: assignedTicket.assignedToId || null,
+          assigned_to_name: assignedTicket.assignedToName || null,
+          created_at: assignedTicket.createdAt,
+          updated_at: assignedTicket.updatedAt,
+          comments: assignedTicket.comments,
+          activity_logs: assignedTicket.activityLogs
         });
       
       if (error) {
@@ -1584,27 +1617,36 @@ export default function App() {
       console.warn("Exception inserting support ticket to database:", err);
     }
 
-    setTickets((prev) => [ticket, ...prev]);
+    setTickets((prev) => [assignedTicket, ...prev]);
 
     logAuditEvent(
-      ticket.userEmail,
-      ticket.userRole,
+      assignedTicket.userEmail,
+      assignedTicket.userRole,
       'Support Ticket Submitted',
-      `Submitted support ticket ${ticket.id} under category ${ticket.category} with priority ${ticket.priority}`
+      `Submitted support ticket ${assignedTicket.id} under category ${assignedTicket.category} with priority ${assignedTicket.priority}`
     );
 
     addNotification(
-      ticket.userEmail,
-      `Your support ticket ${ticket.id}: "${ticket.subject}" has been submitted successfully to the Help Desk.`,
+      assignedTicket.userEmail,
+      `Your support ticket ${assignedTicket.id}: "${assignedTicket.subject}" has been submitted successfully to the Help Desk.`,
       'info_requested'
     );
 
+    if (assignedAdmin) {
+      addNotification(
+        assignedAdmin.email,
+        `📥 Support Ticket [${assignedTicket.id}] from ${assignedTicket.userName} has been auto-assigned to you based on department matching.`,
+        'info_requested'
+      );
+    }
+
     const itStaff = profiles.filter(p => p.role === 'IT Admin' || p.role === 'Super Admin' || p.role === 'IT Support');
     itStaff.forEach(staff => {
-      if (staff.email.toLowerCase() !== ticket.userEmail.toLowerCase()) {
+      if (assignedAdmin && staff.id === assignedAdmin.id) return; // already notified above
+      if (staff.email.toLowerCase() !== assignedTicket.userEmail.toLowerCase()) {
         addNotification(
           staff.email,
-          `⚠️ New Support Ticket [${ticket.id}] from ${ticket.userName}: "${ticket.subject}" (Priority: ${ticket.priority})`,
+          `⚠️ New Support Ticket [${assignedTicket.id}] from ${assignedTicket.userName}: "${assignedTicket.subject}" (Priority: ${assignedTicket.priority})`,
           'info_requested'
         );
       }

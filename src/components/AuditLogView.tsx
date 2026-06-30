@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { AuditLog } from '../types';
 import { ShieldCheck, Search, Filter, Monitor, Globe, Laptop, Smartphone, Key, RefreshCw } from 'lucide-react';
+import SearchInput from './SearchInput';
 
 interface AuditLogViewProps {
   auditLogs: AuditLog[];
@@ -61,16 +62,13 @@ export default function AuditLogView({ auditLogs: rawAuditLogs }: AuditLogViewPr
           </div>
 
           <div className="flex items-center gap-2 flex-wrap">
-            <div className="relative">
-              <Search className="absolute left-3.5 top-2.5 w-4 h-4 text-gray-400" />
-              <input
-                type="text"
-                placeholder="Search audit trail..."
-                value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
-                className="pl-10 pr-4 py-1.5 w-full sm:w-60 md:w-72 bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg text-xs text-gray-900 dark:text-white focus:outline-none focus:ring-1 focus:ring-blue-500"
-              />
-            </div>
+            <SearchInput
+              value={searchTerm}
+              onChange={setSearchTerm}
+              placeholder="Search audit trail..."
+              id="audit-log-search"
+              containerClassName="w-full sm:w-60 md:w-72"
+            />
 
             <select
               value={actionCategory}

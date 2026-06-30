@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { UserProfile, UserRole, Department } from '../types';
 import { UserPlus, Search, Edit2, ShieldAlert, KeyRound, CheckCircle, XCircle, Trash2, ShieldCheck, Mail, Building, Phone } from 'lucide-react';
 import HighlightText from './HighlightText';
+import SearchInput from './SearchInput';
 
 interface UserManagementProps {
   profiles: UserProfile[];
@@ -201,16 +202,13 @@ export default function UserManagement({
           <h2 className="text-base font-bold text-gray-950 dark:text-white">Active Identity Matrix</h2>
           
           <div className="flex items-center gap-2 flex-wrap">
-            <div className="relative">
-              <Search className="absolute left-3.5 top-2.5 w-4 h-4 text-gray-400" />
-              <input
-                type="text"
-                placeholder="Search user email or name..."
-                value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
-                className="pl-10 pr-4 py-1.5 w-full sm:w-60 md:w-72 bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg text-xs text-gray-900 dark:text-white focus:outline-none focus:ring-1 focus:ring-blue-500"
-              />
-            </div>
+            <SearchInput
+              value={searchTerm}
+              onChange={setSearchTerm}
+              placeholder="Search user email or name..."
+              id="user-management-search"
+              containerClassName="w-full sm:w-60 md:w-72"
+            />
 
             <select
               value={roleFilter}
