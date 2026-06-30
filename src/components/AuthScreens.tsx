@@ -443,7 +443,8 @@ export function LoginScreen({ onSuccess, onNavigate, profiles }: LoginScreenProp
 
       {/* SYSTEM PASSWORD SIGN IN METHOD */}
       <form onSubmit={handlePasswordLogin} className="space-y-4">
-        <div className="space-y-1.5">
+        <div className=" relative">
+        <Mail className="absolute right-3.5 top-6.5 w-4 h-4 text-gray-400" />
           <label className="block text-xs font-bold text-gray-700 dark:text-gray-300">Email</label>
           <input
             id="login-email"
@@ -685,9 +686,11 @@ export function RegisterScreen({ onSuccess, onNavigate, departments, profiles }:
 
       <div>
         <form onSubmit={startRegistrationFlow} className="space-y-4">
+        <div className="relative">
           <div className="space-y-1.5">
+          <User className="absolute right-3.5 top-8 w-4 h-4 text-gray-400" />
             <label className="block text-xs font-bold text-gray-700 dark:text-gray-300">Full Name</label>
-            <div className="relative">
+            
               <input
                 id="register-name"
                 type="text"
@@ -701,8 +704,10 @@ export function RegisterScreen({ onSuccess, onNavigate, departments, profiles }:
           </div>
 
           <div className="space-y-1.5">
+          <div className="relative">
+          <Mail className="absolute right-3.5 top-6.5 w-4 h-4 text-gray-400" />
             <label className="block text-xs font-bold text-gray-700 dark:text-gray-300">Corporate Email</label>
-            <div className="relative">
+            
               <input
                 id="register-email"
                 type="email"

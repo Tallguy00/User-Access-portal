@@ -23,7 +23,7 @@ export default function SearchInput({
   return (
     <div className={`relative flex-1 ${containerClassName}`}>
       {/* Non-interactive search icon */}
-      <div className="absolute left-3.5 inset-y-0 flex items-center justify-center pointer-events-none text-gray-400 dark:text-gray-500">
+      <div className="absolute right-3.5 inset-y-0 flex items-center justify-center pointer-events-none text-gray-400 dark:text-gray-500">
         <Search className="w-4 h-4" />
       </div>
 
@@ -46,7 +46,7 @@ export default function SearchInput({
           aria-label="Clear search"
           id={`${uniqueId}-clear`}
         >
-          <X className="w-4 h-4" />
+          <X className="w-4 h-4 hidden" />
         </button>
       )}
     </div>
