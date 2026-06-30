@@ -1808,6 +1808,7 @@ export default function App() {
             auditLogs={auditLogs}
             searchTerm={globalSearchTerm}
             onSearchChange={setGlobalSearchTerm}
+            tickets={tickets}
           />
         );
       case 'Manager':

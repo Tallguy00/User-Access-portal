@@ -293,8 +293,8 @@ export default function SupportView({
       return false;
     }
 
-    // Standard filter for portal: standard users see only their own
-    if (activeView === 'portal' && !isOwner) {
+    // Standard filter for portal: standard users see only their own or those assigned to them
+    if (activeView === 'portal' && !isOwner && !isAssignedToMe) {
       return false;
     }
 

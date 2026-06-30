@@ -96,31 +96,31 @@ body, .dark body {
 
 /* Minimalist Form Controls Overrides */
 input, select, textarea {
-  font-family: var(--font-sans);
-  font-size: 13px;
-  color: #111827;
-  border: 1px solid #D1D5DB;
-  border-radius: 6px;
-  background-color: #FFFFFF;
-  padding: 8px 12px;
-  transition: all 0.15s ease-in-out;
+  font-family: var(--font-sans) !important;
+  font-size: 13px !important;
+  color: #111827 !important;
+  border: 1px solid #D1D5DB !important;
+  border-radius: 6px !important;
+  background-color: #FFFFFF !important;
+  padding: 8px 12px !important;
+  transition: all 0.15s ease-in-out !important;
 }
 
 .dark input, .dark select, .dark textarea {
-  color: #F9FAFB;
-  border-color: #374151;
-  background-color: #111827;
+  color: #F9FAFB !important;
+  border-color: #374151 !important;
+  background-color: #111827 !important;
 }
 
 input:focus, select:focus, textarea:focus {
-  outline: none;
-  border-color: #2563EB;
-  box-shadow: 0 0 0 2px rgba(37, 99, 235, 0.12);
+  outline: none !important;
+  border-color: #2563EB !important;
+  box-shadow: 0 0 0 2px rgba(37, 99, 235, 0.12) !important;
 }
 
 .dark input:focus, .dark select:focus, .dark textarea:focus {
-  border-color: #3B82F6;
-  box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.2);
+  border-color: #3B82F6 !important;
+  box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.2) !important;
 }
 
 /* Clean status pills */

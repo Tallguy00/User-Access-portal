@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { AccessRequest, AuditLog } from '../types';
+import { AccessRequest, AuditLog, SupportTicket } from '../types';
 import { FolderUp, ShieldCheck, Activity, PlusCircle, Search, Filter, ShieldAlert, CheckCircle, Clock, XCircle, ArrowUpRight } from 'lucide-react';
 import HighlightText from './HighlightText';
 import SearchInput from './SearchInput';
@@ -12,6 +12,7 @@ interface UserDashboardProps {
   auditLogs: AuditLog[];
   searchTerm?: string;
   onSearchChange?: (val: string) => void;
+  tickets?: SupportTicket[];
 }
 
 export default function UserDashboard({ 
@@ -21,7 +22,8 @@ export default function UserDashboard({
   onSelectRequest, 
   auditLogs: rawAuditLogs,
   searchTerm: externalSearchTerm,
-  onSearchChange: externalOnSearchChange
+  onSearchChange: externalOnSearchChange,
+  tickets = []
 }: UserDashboardProps) {
   const requests = Array.isArray(rawRequests) ? rawRequests.filter(Boolean) : [];
   const auditLogs = Array.isArray(rawAuditLogs) ? rawAuditLogs.filter(Boolean) : [];
@@ -35,6 +37,16 @@ export default function UserDashboard({
   // Filter requests for currently logged in user (case-insensitively)
   const userRequests = requests.filter(req => req.userEmail?.toLowerCase().trim() === userEmail?.toLowerCase().trim());
   const userLogs = auditLogs.filter(log => log.userEmail?.toLowerCase().trim() === userEmail?.toLowerCase().trim());
+
+  const userTickets = Array.isArray(tickets)
+    ? tickets.filter(t => t.userEmail?.toLowerCase().trim() === userEmail?.toLowerCase().trim())
+    : [];
+
+  const requestIssues = userRequests.filter(req => 
+    req.status === 'Rejected' || 
+    req.status === 'Under Review' || 
+    (req.commentsHistory && req.commentsHistory.some(c => c.authorRole === 'IT Admin' || c.authorRole === 'IT Support'))
+  );
 
   const activeCount = userRequests.filter(r => ['Submitted', 'Under Review', 'Approved'].includes(r.status)).length;
   const approvedCount = userRequests.filter(r => r.status === 'Completed').length;
@@ -162,6 +174,147 @@ export default function UserDashboard({
             <div className="text-[10px] text-gray-500 mt-0.5">Access denied or revision requested</div>
           </div>
         </div>
+      </div>
+
+      {/* IT Admin Assigned Issues & Request Clarifications Panel */}
+      <div id="it-assigned-issues-panel" className="bg-gradient-to-r from-red-50/20 to-amber-50/20 dark:from-red-950/10 dark:to-amber-950/5 border border-red-100/50 dark:border-red-900/20 rounded-2xl p-5 shadow-sm space-y-4">
+        <div className="flex items-center justify-between border-b border-red-150/20 dark:border-red-900/20 pb-3">
+          <div className="flex items-center gap-2.5">
+            <div className="p-1.5 bg-red-100 dark:bg-red-950 text-red-600 dark:text-red-400 rounded-lg">
+              <ShieldAlert className="w-4 h-4 animate-pulse" />
+            </div>
+            <div>
+              <h2 className="text-sm font-bold text-gray-950 dark:text-white">IT Admin Assigned Issues & Clarifications</h2>
+              <p className="text-[11px] text-gray-500 mt-0.5">Access request issues, rejections, or ticket assignments requiring your review.</p>
+            </div>
+          </div>
+          <span className="text-[10px] font-mono px-2 py-0.5 bg-red-100/60 dark:bg-red-950/60 text-red-700 dark:text-red-300 rounded font-bold uppercase tracking-wider">
+            {requestIssues.length + userTickets.length} Actionable Items
+          </span>
+        </div>
+
+        {requestIssues.length === 0 && userTickets.length === 0 ? (
+          <div className="text-center py-6 text-gray-400 dark:text-gray-500 text-xs italic flex items-center justify-center gap-2">
+            <ShieldCheck className="w-4 h-4 text-emerald-500" />
+            <span>All credentials, active access privileges, and support issues are fully resolved. No action required.</span>
+          </div>
+        ) : (
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            {/* Access Request Issues */}
+            {requestIssues.map(req => {
+              const latestAdminComment = req.commentsHistory && [...req.commentsHistory]
+                .reverse()
+                .find(c => c.authorRole === 'IT Admin' || c.authorRole === 'IT Support' || c.authorRole === 'Manager');
+
+              return (
+                <div key={`issue-${req.id}`} className="bg-white dark:bg-gray-950 border border-gray-150 dark:border-gray-800 p-4 rounded-xl flex flex-col justify-between gap-3 shadow-sm hover:border-red-200 dark:hover:border-red-900/40 transition-all">
+                  <div className="space-y-1.5">
+                    <div className="flex items-center justify-between">
+                      <span className="text-[10px] font-mono font-bold text-gray-400 px-1.5 py-0.5 bg-gray-100 dark:bg-gray-800 rounded">
+                        {req.id}
+                      </span>
+                      <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full uppercase ${
+                        req.status === 'Rejected' 
+                          ? 'bg-red-100 text-red-800 dark:bg-red-950/40 dark:text-red-400' 
+                          : 'bg-amber-100 text-amber-800 dark:bg-amber-950/40 dark:text-amber-400'
+                      }`}>
+                        {req.status === 'Rejected' ? 'Rejected' : 'Clarification Required'}
+                      </span>
+                    </div>
+
+                    <h4 className="font-bold text-xs text-gray-950 dark:text-white truncate" title={req.title}>
+                      {req.title}
+                    </h4>
+
+                    <p className="text-[11px] text-gray-500 dark:text-gray-450">
+                      System: <strong className="text-gray-700 dark:text-gray-300 font-medium">{req.systemName}</strong>
+                    </p>
+
+                    {latestAdminComment ? (
+                      <div className="mt-2 p-2.5 bg-amber-50/50 dark:bg-amber-950/10 border border-amber-100/50 dark:border-amber-900/20 rounded-lg">
+                        <div className="flex items-center gap-1.5 text-[10px] font-bold text-amber-800 dark:text-amber-400 mb-1">
+                          <span>Feedback from {latestAdminComment.authorName} ({latestAdminComment.authorRole}):</span>
+                        </div>
+                        <p className="text-[10px] italic text-gray-600 dark:text-gray-350 leading-normal line-clamp-2">
+                          "{latestAdminComment.text}"
+                        </p>
+                      </div>
+                    ) : req.comments ? (
+                      <div className="mt-2 p-2.5 bg-amber-50/50 dark:bg-amber-950/10 border border-amber-100/50 dark:border-amber-900/20 rounded-lg">
+                        <p className="text-[10px] italic text-gray-600 dark:text-gray-350 leading-normal line-clamp-2">
+                          "{req.comments}"
+                        </p>
+                      </div>
+                    ) : null}
+                  </div>
+
+                  <div className="flex items-center justify-end pt-2 border-t border-gray-50 dark:border-gray-800/60">
+                    <button
+                      type="button"
+                      onClick={() => onSelectRequest(req)}
+                      className="text-[11px] font-bold text-blue-600 dark:text-blue-400 hover:underline flex items-center gap-1 cursor-pointer bg-transparent border-none p-0"
+                    >
+                      <span>Update & Resubmit</span>
+                      <ArrowUpRight className="w-3.5 h-3.5" />
+                    </button>
+                  </div>
+                </div>
+              );
+            })}
+
+            {/* Support Tickets (Issues) Assigned */}
+            {userTickets.map(ticket => (
+              <div key={`ticket-issue-${ticket.id}`} className="bg-white dark:bg-gray-950 border border-gray-150 dark:border-gray-800 p-4 rounded-xl flex flex-col justify-between gap-3 shadow-sm hover:border-blue-200 dark:hover:border-blue-900/40 transition-all">
+                <div className="space-y-1.5">
+                  <div className="flex items-center justify-between">
+                    <span className="text-[10px] font-mono font-bold text-gray-400 px-1.5 py-0.5 bg-gray-100 dark:bg-gray-800 rounded">
+                      {ticket.id}
+                    </span>
+                    <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full uppercase tracking-wider ${
+                      ticket.status === 'Open' 
+                        ? 'bg-blue-100 text-blue-800 dark:bg-blue-950/40' 
+                        : ticket.status === 'In Progress' 
+                          ? 'bg-amber-100 text-amber-800 dark:bg-amber-950/40' 
+                          : 'bg-emerald-100 text-emerald-800 dark:bg-emerald-950/40'
+                    }`}>
+                      {ticket.status}
+                    </span>
+                  </div>
+
+                  <h4 className="font-bold text-xs text-gray-950 dark:text-white truncate" title={ticket.subject}>
+                    {ticket.subject}
+                  </h4>
+
+                  <div className="flex items-center gap-1 text-[10px] text-gray-450 dark:text-gray-400">
+                    <span>Category: <strong className="font-semibold text-gray-650 dark:text-gray-300">{ticket.category}</strong></span>
+                    <span>•</span>
+                    <span className={`font-bold ${
+                      ticket.priority === 'High' ? 'text-rose-500' : 'text-gray-450'
+                    }`}>Priority: {ticket.priority}</span>
+                  </div>
+
+                  <div className="mt-2 flex items-center gap-2 p-2 bg-gray-50 dark:bg-gray-800/40 rounded-lg border border-gray-100 dark:border-gray-800">
+                    <div className="w-5.5 h-5.5 rounded-full bg-blue-100 dark:bg-blue-950 text-blue-600 dark:text-blue-400 flex items-center justify-center font-bold text-[9px] uppercase">
+                      {ticket.assignedToName ? ticket.assignedToName[0] : '?'}
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <div className="text-[9px] text-gray-400 leading-none">Assigned Support Agent / IT Admin</div>
+                      <div className="text-[10px] font-bold text-gray-800 dark:text-gray-250 truncate mt-0.5">
+                        {ticket.assignedToName || 'Awaiting IT Admin Allocation'}
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                <div className="flex items-center justify-end pt-2 border-t border-gray-50 dark:border-gray-800/60">
+                  <span className="text-[10px] text-gray-400">
+                    SLA Support Ticket Escalated
+                  </span>
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
       </div>
 
       {/* Main Request Pool */}
