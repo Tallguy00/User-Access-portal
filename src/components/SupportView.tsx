@@ -58,10 +58,20 @@ export default function SupportView({
   const [newComment, setNewComment] = useState('');
   const [isInternalComment, setIsInternalComment] = useState(false);
 
-  // Filter staff profiles who can be assigned (IT Admin, Super Admin, IT Support, or anyone)
-  const itStaffMembers = profiles.filter(p => 
-    p.role === 'IT Admin' || p.role === 'Super Admin' || p.role === 'IT Support' || p.email === 'admin@company.com'
-  );
+  // Filter staff profiles who can be assigned (including all Managers, IT Support, IT Admin, but excluding Super Admin if the current user is an IT Admin)
+  const itStaffMembers = profiles.filter(p => {
+    const isManagerRole = p.role === 'Manager' || p.role === 'Department Manager' || p.fullName.toLowerCase().includes('manager');
+    const isITRole = p.role === 'IT Admin' || p.role === 'IT Support';
+    const isSuperAdminRole = p.role === 'Super Admin';
+
+    // The user requested: "Allow to asign all managers for IT Admin not Super Admin"
+    if (currentUser.role === 'IT Admin') {
+      return (isITRole || isManagerRole) && !isSuperAdminRole;
+    }
+
+    // Otherwise, allow IT Admin, IT Support, Super Admin, and all Managers
+    return isITRole || isSuperAdminRole || isManagerRole || p.email === 'admin@company.com';
+  });
 
   // Handler for drag & drop file upload
   const handleDrag = (e: React.DragEvent) => {
@@ -1095,90 +1105,181 @@ export default function SupportView({
                           </tr>
                         ) : (
                           displayTickets.map((ticket) => (
-                            <tr 
-                              key={ticket.id}
-                              className="hover:bg-gray-50/50 dark:hover:bg-gray-850/20 transition-colors"
-                            >
-                              {/* Ticket ID */}
-                              <td className="px-4 py-3.5 font-mono font-bold text-gray-700 dark:text-gray-300">
-                                {ticket.id}
-                              </td>
-
-                              {/* Subject */}
-                              <td className="px-4 py-3.5 max-w-xs sm:max-w-md">
-                                <button
-                                  onClick={() => setSelectedTicket(ticket)}
-                                  className="font-black text-gray-950 dark:text-white hover:text-blue-600 dark:hover:text-blue-400 hover:underline text-left block cursor-pointer pr-4 truncate"
-                                >
-                                  {ticket.subject}
-                                </button>
-                                <span className="text-[10px] text-gray-400 dark:text-gray-500 flex items-center gap-1 mt-0.5">
-                                  <span>Submitted {new Date(ticket.createdAt).toLocaleDateString()}</span>
-                                  {ticket.assignedToName && (
-                                    <>
-                                      <span>•</span>
-                                      <span className="font-semibold text-gray-500">Assigned: {ticket.assignedToName}</span>
-                                    </>
-                                  )}
-                                </span>
-                              </td>
-
-                              {/* Client Info (Visible to Admin only) */}
-                              {activeView === 'management' && (
-                                <td className="px-4 py-3.5">
-                                  <div className="font-bold text-gray-900 dark:text-white">
-                                    {ticket.userName}
-                                  </div>
-                                  <div className="text-[10px] text-gray-400 font-mono">
-                                    {userDept(ticket.userDepartmentId)}
-                                  </div>
+                            <React.Fragment key={ticket.id}>
+                              <tr 
+                                className="hover:bg-gray-50/50 dark:hover:bg-gray-850/20 transition-colors"
+                              >
+                                {/* Ticket ID */}
+                                <td className="px-4 py-3.5 font-mono font-bold text-gray-700 dark:text-gray-300">
+                                  {ticket.id}
                                 </td>
-                              )}
 
-                              {/* Category */}
-                              <td className="px-4 py-3.5 font-bold text-gray-550 dark:text-gray-400">
-                                {ticket.category}
-                              </td>
-
-                              {/* Priority */}
-                              <td className="px-4 py-3.5">
-                                <span className={`px-2 py-0.5 rounded text-[10px] font-bold ${getPriorityBadgeColor(ticket.priority)}`}>
-                                  {ticket.priority}
-                                </span>
-                              </td>
-
-                              {/* Status */}
-                              <td className="px-4 py-3.5">
-                                <span className={`px-2 py-0.5 rounded text-[10px] font-bold uppercase tracking-wider ${getStatusBadgeColor(ticket.status)}`}>
-                                  {ticket.status}
-                                </span>
-                              </td>
-
-                              {/* Actions / Trigger */}
-                              <td className="px-4 py-3.5 text-right">
-                                <div className="flex items-center justify-end gap-1.5">
+                                {/* Subject */}
+                                <td className="px-4 py-3.5 max-w-xs sm:max-w-md">
                                   <button
                                     onClick={() => setSelectedTicket(ticket)}
-                                    className="p-1.5 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-lg text-gray-450 hover:text-blue-600 dark:hover:text-blue-400 transition-colors cursor-pointer"
-                                    title="View Ticket Conversation"
+                                    className="font-black text-gray-950 dark:text-white hover:text-blue-600 dark:hover:text-blue-400 hover:underline text-left block cursor-pointer pr-4 truncate"
                                   >
-                                    <MessageSquare className="w-4 h-4" />
+                                    {ticket.subject}
                                   </button>
-                                  
-                                  {/* Close ticket directly if not closed */}
-                                  {!isAdmin && ticket.status !== 'Closed' && ticket.status !== 'Resolved' && (
-                                    <button
-                                      onClick={() => handleCloseTicket(ticket)}
-                                      className="p-1.5 hover:bg-rose-50 dark:hover:bg-rose-950/20 rounded-lg text-gray-450 hover:text-rose-600 dark:hover:text-rose-400 transition-colors cursor-pointer"
-                                      title="Close Resolved Ticket"
-                                    >
-                                      <Check className="w-4 h-4" />
-                                    </button>
-                                  )}
-                                </div>
-                              </td>
+                                  <span className="text-[10px] text-gray-400 dark:text-gray-500 flex items-center gap-1 mt-0.5">
+                                    <span>Submitted {new Date(ticket.createdAt).toLocaleDateString()}</span>
+                                    {ticket.assignedToName && (
+                                      <>
+                                        <span>•</span>
+                                        <span className="font-semibold text-gray-500">Assigned: {ticket.assignedToName}</span>
+                                      </>
+                                    )}
+                                  </span>
+                                </td>
 
-                            </tr>
+                                {/* Client Info (Visible to Admin only) */}
+                                {activeView === 'management' && (
+                                  <td className="px-4 py-3.5">
+                                    <div className="font-bold text-gray-900 dark:text-white">
+                                      {ticket.userName}
+                                    </div>
+                                    <div className="text-[10px] text-gray-400 font-mono">
+                                      {userDept(ticket.userDepartmentId)}
+                                    </div>
+                                  </td>
+                                )}
+
+                                {/* Category */}
+                                <td className="px-4 py-3.5 font-bold text-gray-550 dark:text-gray-400">
+                                  {ticket.category}
+                                </td>
+
+                                {/* Priority */}
+                                <td className="px-4 py-3.5">
+                                  <span className={`px-2 py-0.5 rounded text-[10px] font-bold ${getPriorityBadgeColor(ticket.priority)}`}>
+                                    {ticket.priority}
+                                  </span>
+                                </td>
+
+                                {/* Interactive Status Badge */}
+                                <td className="px-4 py-3.5">
+                                  <select
+                                    value={ticket.status}
+                                    onChange={(e) => {
+                                      const nextStatus = e.target.value as any;
+                                      const updatedTicket: SupportTicket = {
+                                        ...ticket,
+                                        status: nextStatus,
+                                        updatedAt: new Date().toISOString(),
+                                        activityLogs: [
+                                          ...ticket.activityLogs,
+                                          {
+                                            id: `act-${Math.random().toString(36).substr(2, 9)}`,
+                                            action: 'Status Changed via Interactive Badge',
+                                            actorName: currentUser.fullName,
+                                            timestamp: new Date().toISOString()
+                                          }
+                                        ]
+                                      };
+                                      onUpdateTicket(updatedTicket);
+                                      showToast(`Ticket ${ticket.id} status changed to ${nextStatus}`, 'success');
+                                    }}
+                                    className={`px-2 py-0.5 rounded text-[10px] font-bold uppercase tracking-wider bg-transparent border border-gray-200 dark:border-gray-700 outline-none cursor-pointer focus:ring-1 focus:ring-blue-500 ${getStatusBadgeColor(ticket.status)}`}
+                                  >
+                                    <option value="Open" className="bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100">Open</option>
+                                    <option value="In Progress" className="bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100">In Progress</option>
+                                    <option value="Resolved" className="bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100">Resolved</option>
+                                    <option value="Closed" className="bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100">Closed</option>
+                                  </select>
+                                </td>
+
+                                {/* Actions / Trigger */}
+                                <td className="px-4 py-3.5 text-right">
+                                  <div className="flex items-center justify-end gap-1.5">
+                                    <button
+                                      onClick={() => setSelectedTicket(ticket)}
+                                      className="p-1.5 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-lg text-gray-450 hover:text-blue-600 dark:hover:text-blue-400 transition-colors cursor-pointer"
+                                      title="View Ticket Conversation"
+                                    >
+                                      <MessageSquare className="w-4 h-4" />
+                                    </button>
+                                    
+                                    {/* Close ticket directly if not closed */}
+                                    {!isAdmin && ticket.status !== 'Closed' && ticket.status !== 'Resolved' && (
+                                      <button
+                                        onClick={() => handleCloseTicket(ticket)}
+                                        className="p-1.5 hover:bg-rose-50 dark:hover:bg-rose-950/20 rounded-lg text-gray-450 hover:text-rose-600 dark:hover:text-rose-400 transition-colors cursor-pointer"
+                                        title="Close Resolved Ticket"
+                                      >
+                                        <Check className="w-4 h-4" />
+                                      </button>
+                                    )}
+                                  </div>
+                                </td>
+                              </tr>
+
+                              {/* Quick Reply Row */}
+                              <tr key={`${ticket.id}-quickreply`} className="bg-gray-50/20 dark:bg-gray-900/40 border-b border-gray-150 dark:border-gray-800/60">
+                                <td colSpan={activeView === 'management' ? 7 : 6} className="px-4 py-2">
+                                  <div className="flex items-center gap-3">
+                                    <span className="text-[10px] font-black uppercase tracking-wider text-gray-400 dark:text-gray-500 shrink-0 flex items-center gap-1">
+                                      <MessageSquare className="w-3 h-3 text-blue-500" />
+                                      <span>Quick Reply:</span>
+                                    </span>
+                                    <form 
+                                      onSubmit={(e) => {
+                                        e.preventDefault();
+                                        const form = e.currentTarget;
+                                        const input = form.elements.namedItem(`quickReply-${ticket.id}`) as HTMLInputElement;
+                                        const text = input.value.trim();
+                                        if (!text) return;
+
+                                        const commentId = `cmt-${Math.random().toString(36).substr(2, 9)}`;
+                                        const comment = {
+                                          id: commentId,
+                                          authorName: currentUser.fullName,
+                                          authorEmail: currentUser.email,
+                                          authorRole: currentUser.role,
+                                          text: text,
+                                          timestamp: new Date().toISOString(),
+                                          isInternal: false
+                                        };
+
+                                        const updatedTicket: SupportTicket = {
+                                          ...ticket,
+                                          updatedAt: new Date().toISOString(),
+                                          comments: [...ticket.comments, comment],
+                                          activityLogs: [
+                                            ...ticket.activityLogs,
+                                            {
+                                              id: `act-${Math.random().toString(36).substr(2, 9)}`,
+                                              action: 'Added Response via Quick Reply',
+                                              actorName: currentUser.fullName,
+                                              timestamp: new Date().toISOString()
+                                            }
+                                          ]
+                                        };
+
+                                        onUpdateTicket(updatedTicket);
+                                        input.value = '';
+                                        showToast(`Response added to Ticket ${ticket.id}`, 'success');
+                                      }}
+                                      className="flex-1 flex items-center gap-2"
+                                    >
+                                      <input
+                                        id={`quickReply-${ticket.id}`}
+                                        name={`quickReply-${ticket.id}`}
+                                        type="text"
+                                        placeholder="Type quick reply and press Enter..."
+                                        className="w-full max-w-lg px-2.5 py-1 bg-white dark:bg-gray-850 border border-gray-200 dark:border-gray-700 rounded-lg text-xs text-gray-900 dark:text-white placeholder-gray-400 dark:placeholder-gray-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
+                                      />
+                                      <button
+                                        type="submit"
+                                        className="px-3 py-1 bg-blue-600 hover:bg-blue-700 text-white rounded-lg text-[10px] font-bold tracking-wide uppercase cursor-pointer whitespace-nowrap transition-colors"
+                                      >
+                                        Send
+                                      </button>
+                                    </form>
+                                  </div>
+                                </td>
+                              </tr>
+                            </React.Fragment>
                           ))
                         )}
                       </tbody>
