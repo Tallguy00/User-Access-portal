@@ -1154,22 +1154,22 @@ export function GoogleAuthHelperModal({ isOpen, onClose }: GoogleAuthHelperModal
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-gray-950/60 p-4 backdrop-blur-sm animate-in fade-in duration-200">
-      <div className="w-full max-w-lg bg-white rounded-2xl shadow-2xl border border-gray-200 overflow-hidden flex flex-col max-h-[90vh] text-gray-900 font-sans">
+      <div className="w-full max-w-lg bg-white dark:bg-gray-900 rounded-2xl shadow-2xl border border-gray-200 dark:border-gray-850 overflow-hidden flex flex-col max-h-[90vh] text-gray-900 dark:text-white font-sans">
         
         {/* Modal Header */}
-        <div className="p-5 border-b border-gray-150 flex items-start justify-between bg-gray-50/70">
+        <div className="p-5 border-b border-gray-150 dark:border-gray-800 flex items-start justify-between bg-gray-50/70 dark:bg-gray-900/40">
           <div className="space-y-1">
-            <h3 className="text-base font-bold text-gray-950 flex items-center gap-2">
+            <h3 className="text-base font-bold text-gray-950 dark:text-white flex items-center gap-2">
               <Sparkles className="w-5 h-5 text-amber-500 shrink-0" />
               <span>Federated Authentication Gateway Setup</span>
             </h3>
-            <p className="text-xs text-gray-500">
+            <p className="text-xs text-gray-500 dark:text-gray-400">
               Understanding and configuring Supabase Auth providers (Google & Apple).
             </p>
           </div>
           <button
             onClick={onClose}
-            className="p-1.5 hover:bg-gray-200 rounded-lg text-gray-455 hover:text-gray-700 transition-colors cursor-pointer bg-transparent"
+            className="p-1.5 hover:bg-gray-200 dark:hover:bg-gray-800 rounded-lg text-gray-455 hover:text-gray-700 dark:hover:text-gray-300 transition-colors cursor-pointer bg-transparent"
           >
             <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
@@ -1180,9 +1180,9 @@ export function GoogleAuthHelperModal({ isOpen, onClose }: GoogleAuthHelperModal
         {/* Scrollable Content */}
         <div className="p-6 overflow-y-auto space-y-4 text-xs leading-relaxed max-h-[60vh]">
           <div className="space-y-4">
-            <div className="p-3.5 bg-amber-50 border border-amber-250 rounded-xl text-amber-800 space-y-1">
+            <div className="p-3.5 bg-amber-50 dark:bg-amber-950/20 border border-amber-250 dark:border-amber-900/40 rounded-xl text-amber-800 dark:text-amber-300 space-y-1">
               <div className="font-semibold flex items-center gap-1.5">
-                <AlertCircle className="w-4 h-4 text-amber-600" />
+                <AlertCircle className="w-4 h-4 text-amber-600 dark:text-amber-400" />
                 <span>Why this happen?</span>
               </div>
               <p className="text-[11px] leading-relaxed">
@@ -1191,42 +1191,42 @@ export function GoogleAuthHelperModal({ isOpen, onClose }: GoogleAuthHelperModal
             </div>
 
             <div className="space-y-2.5">
-              <span className="font-bold text-gray-950 block text-xs tracking-tight uppercase">How to enable it (1-Minute Fix):</span>
+              <span className="font-bold text-gray-950 dark:text-white block text-xs tracking-tight uppercase">How to enable it (1-Minute Fix):</span>
               <ol className="space-y-3 pl-1 text-[11px]">
                 <li className="flex gap-2">
-                  <span className="w-5 h-5 bg-blue-50 text-blue-600 font-bold rounded-full flex items-center justify-center shrink-0">1</span>
+                  <span className="w-5 h-5 bg-blue-50 dark:bg-blue-950/50 text-blue-600 dark:text-blue-400 font-bold rounded-full flex items-center justify-center shrink-0">1</span>
                   <div>
-                    <strong>Go to Supabase Admin Console:</strong>
-                    <p className="text-gray-500 mt-0.5">
-                      Open <a href="https://supabase.com/dashboard/project/ayqpacuajyikmnayncrt/auth/providers" target="_blank" rel="noopener noreferrer" className="text-blue-600 font-semibold hover:underline inline-flex items-center gap-0.5">
+                    <strong className="text-gray-900 dark:text-gray-100">Go to Supabase Admin Console:</strong>
+                    <p className="text-gray-500 dark:text-gray-400 mt-0.5">
+                      Open <a href="https://supabase.com/dashboard/project/ayqpacuajyikmnayncrt/auth/providers" target="_blank" rel="noopener noreferrer" className="text-blue-600 dark:text-blue-400 font-semibold hover:underline inline-flex items-center gap-0.5">
                         Authentication &gt; Providers settings
                       </a> inside your dashboard.
                     </p>
                   </div>
                 </li>
                 <li className="flex gap-2">
-                  <span className="w-5 h-5 bg-blue-50 text-blue-600 font-bold rounded-full flex items-center justify-center shrink-0">2</span>
+                  <span className="w-5 h-5 bg-blue-50 dark:bg-blue-950/50 text-blue-600 dark:text-blue-400 font-bold rounded-full flex items-center justify-center shrink-0">2</span>
                   <div>
-                    <strong>Enable Google Provider:</strong>
-                    <p className="text-gray-500 mt-0.5">
+                    <strong className="text-gray-900 dark:text-gray-100">Enable Google Provider:</strong>
+                    <p className="text-gray-500 dark:text-gray-400 mt-0.5">
                       Expand the <strong>Google</strong> row inside the auth providers catalog, and toggle <strong>"Enable Google provider"</strong> to ON.
                     </p>
                   </div>
                 </li>
                 <li className="flex gap-2">
-                  <span className="w-5 h-5 bg-blue-50 text-blue-600 font-bold rounded-full flex items-center justify-center shrink-0">3</span>
+                  <span className="w-5 h-5 bg-blue-50 dark:bg-blue-950/50 text-blue-600 dark:text-blue-400 font-bold rounded-full flex items-center justify-center shrink-0">3</span>
                   <div>
-                    <strong>Enter Google Client Keys:</strong>
-                    <p className="text-gray-500 mt-0.5">
+                    <strong className="text-gray-900 dark:text-gray-100">Enter Google Client Keys:</strong>
+                    <p className="text-gray-500 dark:text-gray-400 mt-0.5">
                       Paste the <strong>Client ID</strong> and <strong>Client Secret</strong> generated from your Google Cloud Console (under APIs &amp; Services &gt; Credentials).
                     </p>
                   </div>
                 </li>
                 <li className="flex gap-2">
-                  <span className="w-5 h-5 bg-blue-50 text-blue-600 font-bold rounded-full flex items-center justify-center shrink-0">4</span>
+                  <span className="w-5 h-5 bg-blue-50 dark:bg-blue-950/50 text-blue-600 dark:text-blue-400 font-bold rounded-full flex items-center justify-center shrink-0">4</span>
                   <div>
-                    <strong>Configure Redirect URI:</strong>
-                    <p className="text-gray-500 mt-0.5">
+                    <strong className="text-gray-900 dark:text-gray-100">Configure Redirect URI:</strong>
+                    <p className="text-gray-500 dark:text-gray-400 mt-0.5">
                       Copy the <strong>Redirect URI</strong> displayed in Supabase, and paste it under "Authorized redirect URIs" in your Google Developer console, then hit <strong>Save</strong>!
                     </p>
                   </div>
@@ -1234,9 +1234,9 @@ export function GoogleAuthHelperModal({ isOpen, onClose }: GoogleAuthHelperModal
               </ol>
             </div>
 
-            <div className="border-t border-gray-150 pt-3.5 space-y-2">
-              <span className="font-semibold text-gray-950 block text-[11px]">Ready to test?</span>
-              <p className="text-gray-500 text-[11px]">If you've enabled the Google provider in your Supabase admin console, you can fire the live connection now:</p>
+            <div className="border-t border-gray-150 dark:border-gray-800 pt-3.5 space-y-2">
+              <span className="font-semibold text-gray-950 dark:text-gray-200 block text-[11px]">Ready to test?</span>
+              <p className="text-gray-500 dark:text-gray-400 text-[11px]">If you've enabled the Google provider in your Supabase admin console, you can fire the live connection now:</p>
               <button
                 type="button"
                 onClick={async () => {
@@ -1251,7 +1251,7 @@ export function GoogleAuthHelperModal({ isOpen, onClose }: GoogleAuthHelperModal
                     alert('Attempt failed: ' + (e?.message || 'Check your Supabase configurations.'));
                   }
                 }}
-                className="w-full py-2 bg-gray-900 hover:bg-gray-800 text-white font-bold rounded-xl transition-all cursor-pointer text-center"
+                className="w-full py-2 bg-gray-900 dark:bg-gray-800 hover:bg-gray-800 dark:hover:bg-gray-700 text-white font-bold rounded-xl transition-all cursor-pointer text-center"
               >
                 🚀 Connect with Live Google OAuth
               </button>
@@ -1260,10 +1260,10 @@ export function GoogleAuthHelperModal({ isOpen, onClose }: GoogleAuthHelperModal
         </div>
 
         {/* Modal Actions */}
-        <div className="p-5 border-t border-gray-150 flex items-center justify-end gap-2 bg-gray-50/70">
+        <div className="p-5 border-t border-gray-150 dark:border-gray-800 flex items-center justify-end gap-2 bg-gray-50/70 dark:bg-gray-900/40">
           <button
             onClick={onClose}
-            className="px-4 py-2 border border-gray-200 hover:bg-gray-100 rounded-xl font-bold transition-all text-gray-700 cursor-pointer"
+            className="px-4 py-2 border border-gray-200 dark:border-gray-750 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-xl font-bold transition-all text-gray-700 dark:text-gray-300 cursor-pointer bg-transparent"
           >
             Close
           </button>

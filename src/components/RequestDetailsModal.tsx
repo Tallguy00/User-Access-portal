@@ -506,7 +506,7 @@ export default function RequestDetailsModal({
           })()}
 
           {/* Metadata Grid */}
-          <div className="grid grid-cols-2 md:grid-cols-3 gap-4 p-4 rounded-xl bg-gray-50 dark:bg-gray-800/30 border border-gray-100 dark:border-gray-800/50">
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4 p-4 rounded-xl bg-gray-50 dark:bg-gray-800/30 border border-gray-100 dark:border-gray-800/50">
             <div>
               <div className="text-[10px] font-semibold text-gray-400 uppercase tracking-wider">Requester</div>
               <div className="flex items-center gap-1.5 mt-1 text-sm font-semibold text-gray-800 dark:text-gray-200">
@@ -524,7 +524,7 @@ export default function RequestDetailsModal({
               <div className="text-xs text-blue-600 dark:text-blue-400 font-medium">{request.accessType}</div>
             </div>
 
-            <div className="col-span-2 md:col-span-1">
+            <div className="col-span-1 md:col-span-1">
               <div className="text-[10px] font-semibold text-gray-400 uppercase tracking-wider">Details</div>
               <div className="text-xs text-gray-700 dark:text-gray-300 mt-1 flex flex-col gap-0.5">
                 <div>Dept: <span className="font-medium text-gray-900 dark:text-white">{departmentName}</span></div>
@@ -537,7 +537,7 @@ export default function RequestDetailsModal({
               </div>
             </div>
             
-            <div className="col-span-2 md:col-span-3 border-t border-gray-100 dark:border-gray-800/50 pt-3 flex flex-wrap gap-x-6 gap-y-1 text-xs text-gray-500 dark:text-gray-400">
+            <div className="col-span-1 md:col-span-3 border-t border-gray-100 dark:border-gray-800/50 pt-3 flex flex-wrap gap-x-6 gap-y-1 text-xs text-gray-500 dark:text-gray-400">
               <div className="flex items-center gap-1">
                 <Calendar className="w-3.5 h-3.5 text-gray-400" />
                 <span>Created: {new Date(request.createdAt).toLocaleDateString()}</span>
