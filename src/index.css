@@ -227,3 +227,39 @@ input:focus, select:focus, textarea:focus {
   animation: modal-slide 0.3s cubic-bezier(0.34, 1.56, 0.64, 1) forwards;
 }
 
+/* Standardized Table Styles */
+.table-standard {
+  width: 100%;
+  text-align: left;
+  font-size: 13px;
+  border-collapse: collapse;
+}
+
+.table-header-row {
+  background-color: rgba(249, 250, 251, 0.5) !important;
+}
+
+.dark .table-header-row {
+  background-color: rgba(17, 24, 39, 0.5) !important;
+}
+
+.th-standard {
+  padding: 12px 16px !important;
+  font-family: var(--font-mono) !important;
+  font-size: 10px !important;
+  font-weight: 700 !important;
+  text-transform: uppercase !important;
+  letter-spacing: 0.05em !important;
+  color: #9CA3AF !important; /* text-gray-400 */
+}
+
+.dark .th-standard {
+  color: #6B7280 !important; /* text-gray-500 */
+}
+
+.td-standard {
+  padding: 14px 16px !important;
+  font-size: 13px !important;
+}
+
+

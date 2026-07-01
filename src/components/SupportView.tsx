@@ -1090,16 +1090,16 @@ export default function SupportView({
 
                   {/* ACTIVE TABLE */}
                   <div className="overflow-x-auto border border-gray-150 dark:border-gray-800/80 rounded-xl bg-white dark:bg-gray-900">
-                    <table className="w-full text-left border-collapse">
+                    <table className="table-standard border-collapse">
                       <thead>
-                        <tr className="bg-gray-50/80 dark:bg-gray-850/65 border-b border-gray-150 dark:border-gray-800 text-[10px] font-black uppercase text-gray-450 dark:text-gray-400 tracking-wider">
-                          <th className="px-4 py-3">Ticket ID</th>
-                          <th className="px-4 py-3">Subject / Incident</th>
-                          {activeView === 'management' && <th className="px-4 py-3">Client</th>}
-                          <th className="px-4 py-3">Category</th>
-                          <th className="px-4 py-3">Priority</th>
-                          <th className="px-4 py-3">Status</th>
-                          <th className="px-4 py-3 text-right">Activity</th>
+                        <tr className="table-header-row text-[10px] font-black uppercase text-gray-450 dark:text-gray-400 tracking-wider">
+                          <th className="th-standard">Ticket ID</th>
+                          <th className="th-standard">Subject / Incident</th>
+                          {activeView === 'management' && <th className="th-standard">Client</th>}
+                          <th className="th-standard">Category</th>
+                          <th className="th-standard">Priority</th>
+                          <th className="th-standard">Status</th>
+                          <th className="th-standard text-right">Activity</th>
                         </tr>
                       </thead>
                       <tbody className="divide-y divide-gray-100 dark:divide-gray-800/60 text-xs">
@@ -1117,12 +1117,12 @@ export default function SupportView({
                                 className="hover:bg-gray-50/50 dark:hover:bg-gray-850/20 transition-colors"
                               >
                                 {/* Ticket ID */}
-                                <td className="px-4 py-3.5 font-mono font-bold text-gray-700 dark:text-gray-300">
+                                <td className="td-standard font-mono font-bold text-gray-700 dark:text-gray-300">
                                   {ticket.id}
                                 </td>
 
                                 {/* Subject */}
-                                <td className="px-4 py-3.5 max-w-xs sm:max-w-md">
+                                <td className="td-standard max-w-xs sm:max-w-md">
                                   <button
                                     onClick={() => setSelectedTicket(ticket)}
                                     className="font-black text-gray-950 dark:text-white hover:text-blue-600 dark:hover:text-blue-400 hover:underline text-left block cursor-pointer pr-4 truncate"
@@ -1142,7 +1142,7 @@ export default function SupportView({
 
                                 {/* Client Info (Visible to Admin only) */}
                                 {activeView === 'management' && (
-                                  <td className="px-4 py-3.5">
+                                  <td className="td-standard">
                                     <div className="font-bold text-gray-900 dark:text-white">
                                       {ticket.userName}
                                     </div>
@@ -1153,19 +1153,19 @@ export default function SupportView({
                                 )}
 
                                 {/* Category */}
-                                <td className="px-4 py-3.5 font-bold text-gray-550 dark:text-gray-400">
+                                <td className="td-standard font-bold text-gray-550 dark:text-gray-400">
                                   {ticket.category}
                                 </td>
 
                                 {/* Priority */}
-                                <td className="px-4 py-3.5">
+                                <td className="td-standard">
                                   <span className={`px-2 py-0.5 rounded text-[10px] font-bold ${getPriorityBadgeColor(ticket.priority)}`}>
                                     {ticket.priority}
                                   </span>
                                 </td>
 
                                 {/* Interactive Status Badge */}
-                                <td className="px-4 py-3.5">
+                                <td className="td-standard">
                                   <select
                                     value={ticket.status}
                                     onChange={(e) => {
@@ -1197,7 +1197,7 @@ export default function SupportView({
                                 </td>
 
                                 {/* Actions / Trigger */}
-                                <td className="px-4 py-3.5 text-right">
+                                <td className="td-standard text-right">
                                   <div className="flex items-center justify-end gap-1.5">
                                     <button
                                       onClick={() => setSelectedTicket(ticket)}

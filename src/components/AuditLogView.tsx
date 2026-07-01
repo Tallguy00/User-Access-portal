@@ -86,14 +86,14 @@ export default function AuditLogView({ auditLogs: rawAuditLogs }: AuditLogViewPr
 
         {/* Real logs list */}
         <div className="overflow-x-auto">
-          <table className="w-full text-left text-xs divide-y divide-gray-150 dark:divide-gray-800">
+          <table className="table-standard divide-y divide-gray-150 dark:divide-gray-800">
             <thead>
-              <tr className="bg-gray-55/60 dark:bg-gray-900/50 text-gray-400 font-bold uppercase tracking-wider">
-                <th className="p-4 pl-6">Operator & Role</th>
-                <th className="p-4">Action</th>
-                <th className="p-4">Operation Scope Details</th>
-                <th className="p-4">Networking Coordinates</th>
-                <th className="p-4 pr-6">Date Timestamp</th>
+              <tr className="table-header-row text-gray-400 font-bold uppercase tracking-wider">
+                <th className="th-standard pl-6">Operator & Role</th>
+                <th className="th-standard">Action</th>
+                <th className="th-standard">Operation Scope Details</th>
+                <th className="th-standard">Networking Coordinates</th>
+                <th className="th-standard pr-6">Date Timestamp</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-gray-100 dark:divide-gray-850 font-mono text-[11px]">
@@ -108,25 +108,25 @@ export default function AuditLogView({ auditLogs: rawAuditLogs }: AuditLogViewPr
                   <tr key={log.id} className="hover:bg-gray-50/40 dark:hover:bg-gray-800/15 transition-all">
                     
                     {/* User */}
-                    <td className="p-4 pl-6 font-sans">
+                    <td className="td-standard pl-6 font-sans">
                       <div className="font-bold text-gray-900 dark:text-white">{log.userEmail}</div>
                       <div className="text-[10px] text-indigo-600 dark:text-indigo-400 font-semibold mt-0.5 uppercase">{log.userRole}</div>
                     </td>
 
                     {/* Action */}
-                    <td className="p-4 font-sans">
+                    <td className="td-standard font-sans">
                       <span className={`px-2 py-0.5 rounded border font-semibold text-[10px] uppercase tracking-wide inline-block ${getActionBadgeColor(log.action)}`}>
                         {log.action}
                       </span>
                     </td>
 
                     {/* Details */}
-                    <td className="p-4 text-gray-700 dark:text-gray-300 max-w-sm leading-relaxed font-sans text-xs">
+                    <td className="td-standard text-gray-700 dark:text-gray-300 max-w-sm leading-relaxed font-sans text-xs">
                       {log.details}
                     </td>
 
                     {/* Connections */}
-                    <td className="p-4 text-gray-500 dark:text-gray-400">
+                    <td className="td-standard text-gray-500 dark:text-gray-400">
                       <div className="flex items-center gap-1.5">
                         <Globe className="w-3.5 h-3.5 text-gray-400 shrink-0" />
                         <span className="font-medium text-gray-700 dark:text-gray-300">{log.ipAddress}</span>
@@ -142,7 +142,7 @@ export default function AuditLogView({ auditLogs: rawAuditLogs }: AuditLogViewPr
                     </td>
 
                     {/* Timestamp */}
-                    <td className="p-4 pr-6 text-gray-400 text-[10px]">
+                    <td className="td-standard pr-6 text-gray-400 text-[10px]">
                       {new Date(log.createdAt).toLocaleString()}
                     </td>
 

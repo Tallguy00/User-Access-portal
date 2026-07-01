@@ -3,6 +3,7 @@ import { AccessRequest, UserProfile, Department, RequestStatus } from '../types'
 import { ShieldAlert, Cpu, KeyRound, CheckSquare, Search, Lock, AlertTriangle, Play, CheckCircle, BarChart2, TrendingUp, Calendar as CalendarIcon, Download, FileSpreadsheet, Eye, FileText } from 'lucide-react';
 import HighlightText from './HighlightText';
 import SearchInput from './SearchInput';
+import SharedDashboardContainer from './SharedDashboardContainer';
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, BarChart, Bar, Cell, PieChart, Pie, Legend } from 'recharts';
 
 interface AdminDashboardProps {
@@ -239,27 +240,31 @@ export default function AdminDashboard({
     }
   };
 
+  const breadcrumbs = [
+    { label: 'IdentityFlow', active: false },
+    { label: 'Workspace', active: false },
+    { label: 'IT Administration', active: true }
+  ];
+
+  const headerAction = (
+    <button
+      onClick={handleExportCSV}
+      className="w-full md:w-auto inline-flex items-center justify-center gap-2 px-4 py-2.5 bg-emerald-600 hover:bg-emerald-700 text-white font-extrabold text-xs rounded-xl transition-all cursor-pointer shadow-sm active:scale-95"
+      id="export-admin-csv-btn"
+      title="Download complete request log as CSV"
+    >
+      <FileSpreadsheet className="w-4 h-4 shrink-0" />
+      <span>Export to CSV</span>
+    </button>
+  );
+
   return (
-    <div className="space-y-6">
-      
-      {/* Title with Export */}
-      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
-        <div>
-          <h1 className="text-2xl font-black text-gray-950 dark:text-white tracking-tight">IT Privileges Administration</h1>
-          <p className="text-sm text-gray-500 mt-1">Settle approved supervisor requests, monitor system connections, and audit security compliance.</p>
-        </div>
-        <div className="shrink-0">
-          <button
-            onClick={handleExportCSV}
-            className="w-full md:w-auto inline-flex items-center justify-center gap-2 px-4 py-2.5 bg-emerald-600 hover:bg-emerald-700 text-white font-extrabold text-xs rounded-xl transition-all cursor-pointer shadow-sm active:scale-95"
-            id="export-admin-csv-btn"
-            title="Download complete request log as CSV"
-          >
-            <FileSpreadsheet className="w-4 h-4 shrink-0" />
-            <span>Export to CSV</span>
-          </button>
-        </div>
-      </div>
+    <SharedDashboardContainer
+      title="IT Privileges Administration"
+      subtitle="Settle approved supervisor requests, monitor system connections, and audit security compliance."
+      breadcrumbItems={breadcrumbs}
+      action={headerAction}
+    >
 
       {/* Admin Stats Grid */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
@@ -740,7 +745,7 @@ export default function AdminDashboard({
 
       </div>
 
-    </div>
+    </SharedDashboardContainer>
   );
 }
 

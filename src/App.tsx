@@ -250,6 +250,26 @@ export default function App() {
     }
   }, [theme]);
 
+  // Keyboard shortcut Alt + D to trigger click on '#btn-nav-dashboard'
+  useEffect(() => {
+    const handleKeyDown = (event: KeyboardEvent) => {
+      // Check for Alt + D or Alt + Shift + D
+      if (event.altKey && (event.key === 'd' || event.key === 'D' || event.code === 'KeyD')) {
+        event.preventDefault();
+        const dashboardBtn = document.getElementById('btn-nav-dashboard');
+        if (dashboardBtn) {
+          dashboardBtn.click();
+          showToast('Alt + D shortcut: Navigated to Executive Dashboard', 'info');
+        }
+      }
+    };
+
+    window.addEventListener('keydown', handleKeyDown);
+    return () => {
+      window.removeEventListener('keydown', handleKeyDown);
+    };
+  }, []);
+
   // Automated pending SLA reminders (>48h)
   useEffect(() => {
     const safeRequests = Array.isArray(requests) ? requests.filter(Boolean) : [];
@@ -1877,7 +1897,12 @@ export default function App() {
 
   // Dashboard workspace shell layout with lateral sidebar
   return (
-    <div className={`${theme} min-h-screen bg-white dark:bg-gray-950 dark:text-gray-100 font-sans text-gray-900 transition-colors duration-200`}>
+    <div className={`${theme} min-h-screen bg-slate-50 dark:bg-slate-950 dark:text-slate-100 font-sans text-slate-900 transition-colors duration-200 relative overflow-hidden pb-16`}>
+      
+      {/* Floating Background Glows */}
+      <div className="absolute top-0 inset-x-0 h-96 bg-gradient-to-b from-indigo-100/20 to-transparent dark:from-indigo-950/10 pointer-events-none z-0" />
+      <div className="absolute top-[300px] left-10 w-72 h-72 bg-blue-400/5 dark:bg-blue-600/5 rounded-full blur-3xl pointer-events-none z-0" />
+      <div className="absolute top-[100px] right-10 w-96 h-96 bg-indigo-400/5 dark:bg-indigo-600/5 rounded-full blur-3xl pointer-events-none z-0" />
       
       {/* Shell Header */}
       <Header
@@ -1893,26 +1918,29 @@ export default function App() {
         onSelectProfileTab={() => setActiveTab('profile')}
       />
 
-      <div className="flex flex-col lg:flex-row min-h-[calc(100vh-5rem)]">
+      <div className="flex flex-col lg:flex-row min-h-[calc(100vh-5rem)] relative z-10">
         
         {/* Navigation Sidebar Drawer */}
         {/* Navigation Sidebar Drawer */}
-        <aside className="w-full lg:w-64 bg-[#0b1329] text-gray-300 p-6 flex flex-col gap-6 border-b lg:border-b-0 lg:border-r border-[#1e293b]">
+        <aside className="w-full lg:w-64 bg-white/80 dark:bg-slate-950/80 backdrop-blur-md text-slate-700 dark:text-slate-300 p-6 flex flex-col gap-6 border-b lg:border-b-0 lg:border-r border-slate-200/60 dark:border-slate-900/60 transition-all z-10">
           
           <div className="space-y-2">
-            <h3 className="text-[10px] uppercase font-bold text-gray-500 tracking-widest pl-3">Workspace Modules</h3>
+            <h3 className="text-[10px] uppercase font-bold text-slate-400 dark:text-slate-500 tracking-widest pl-3">Workspace Modules</h3>
             <nav className="space-y-1.5">
               
               {/* Tab Button */}
               <button
                 id="btn-nav-dashboard"
                 onClick={() => setActiveTab('dashboard')}
-                className={`w-full flex items-center gap-3 px-4 py-3 text-xs font-semibold transition-all rounded-xl ${
+                className={`w-full flex items-center gap-3 px-4 py-3 text-xs font-semibold transition-all rounded-xl border-none cursor-pointer relative ${
                   activeTab === 'dashboard'
-                    ? 'text-white bg-[#0052cc] shadow-md shadow-blue-900/10'
-                    : 'text-gray-400 hover:text-white hover:bg-white/5 border-transparent'
+                    ? 'text-white bg-indigo-600 shadow-md shadow-indigo-500/20 pl-6'
+                    : 'text-slate-500 dark:text-slate-400 hover:text-indigo-600 dark:hover:text-indigo-400 hover:bg-slate-100/60 dark:hover:bg-slate-900/60'
                 }`}
               >
+                {activeTab === 'dashboard' && (
+                  <span className="absolute left-2 top-3.5 bottom-3.5 w-1 bg-white rounded-full animate-fade-in" />
+                )}
                 <LayoutDashboard className="w-4 h-4 shrink-0" />
                 <span>Executive Dashboard</span>
               </button>
@@ -1921,10 +1949,10 @@ export default function App() {
               <button
                 id="btn-nav-faq"
                 onClick={() => setActiveTab('faq')}
-                className={`w-full flex items-center gap-3 px-4 py-3 text-xs font-semibold transition-all rounded-xl ${
+                className={`w-full flex items-center gap-3 px-4 py-3 text-xs font-semibold transition-all rounded-xl border-none cursor-pointer ${
                   activeTab === 'faq'
-                    ? 'text-white bg-[#0052cc] shadow-md shadow-blue-900/10'
-                    : 'text-gray-400 hover:text-white hover:bg-white/5 border-transparent'
+                    ? 'text-white bg-indigo-600 shadow-md shadow-indigo-500/20'
+                    : 'text-slate-500 dark:text-slate-400 hover:text-indigo-600 dark:hover:text-indigo-400 hover:bg-slate-100/60 dark:hover:bg-slate-900/60'
                 }`}
               >
                 <HelpCircle className="w-4 h-4 shrink-0" />
@@ -1935,10 +1963,10 @@ export default function App() {
               <button
                 id="btn-nav-profile"
                 onClick={() => setActiveTab('profile')}
-                className={`w-full flex items-center gap-3 px-4 py-3 text-xs font-semibold transition-all rounded-xl ${
+                className={`w-full flex items-center gap-3 px-4 py-3 text-xs font-semibold transition-all rounded-xl border-none cursor-pointer ${
                   activeTab === 'profile'
-                    ? 'text-white bg-[#0052cc] shadow-md shadow-blue-900/10'
-                    : 'text-gray-400 hover:text-white hover:bg-white/5 border-transparent'
+                    ? 'text-white bg-indigo-600 shadow-md shadow-indigo-500/20'
+                    : 'text-slate-500 dark:text-slate-400 hover:text-indigo-600 dark:hover:text-indigo-400 hover:bg-slate-100/60 dark:hover:bg-slate-900/60'
                 }`}
               >
                 <User className="w-4 h-4 shrink-0" />
@@ -1949,10 +1977,10 @@ export default function App() {
               <button
                 id="btn-nav-support"
                 onClick={() => setActiveTab('support')}
-                className={`w-full flex items-center gap-3 px-4 py-3 text-xs font-semibold transition-all rounded-xl ${
+                className={`w-full flex items-center gap-3 px-4 py-3 text-xs font-semibold transition-all rounded-xl border-none cursor-pointer ${
                   activeTab === 'support'
-                    ? 'text-white bg-[#0052cc] shadow-md shadow-blue-900/10'
-                    : 'text-gray-400 hover:text-white hover:bg-white/5 border-transparent'
+                    ? 'text-white bg-indigo-600 shadow-md shadow-indigo-500/20'
+                    : 'text-slate-500 dark:text-slate-400 hover:text-indigo-600 dark:hover:text-indigo-400 hover:bg-slate-100/60 dark:hover:bg-slate-900/60'
                 }`}
               >
                 <LifeBuoy className="w-4 h-4 shrink-0 text-emerald-400" />
@@ -1964,10 +1992,10 @@ export default function App() {
                 <>
                   <button
                     onClick={() => setActiveTab('users')}
-                    className={`w-full flex items-center gap-3 px-4 py-3 text-xs font-semibold transition-all rounded-xl ${
+                    className={`w-full flex items-center gap-3 px-4 py-3 text-xs font-semibold transition-all rounded-xl border-none cursor-pointer ${
                       activeTab === 'users'
-                        ? 'text-white bg-[#0052cc] shadow-md shadow-blue-900/10'
-                        : 'text-gray-400 hover:text-white hover:bg-white/5 border-transparent'
+                        ? 'text-white bg-indigo-600 shadow-md shadow-indigo-500/20'
+                        : 'text-slate-500 dark:text-slate-400 hover:text-indigo-600 dark:hover:text-indigo-400 hover:bg-slate-100/60 dark:hover:bg-slate-900/60'
                     }`}
                   >
                     <Users className="w-4 h-4 shrink-0" />
@@ -1976,10 +2004,10 @@ export default function App() {
 
                   <button
                     onClick={() => setActiveTab('reports')}
-                    className={`w-full flex items-center gap-3 px-4 py-3 text-xs font-semibold transition-all rounded-xl ${
+                    className={`w-full flex items-center gap-3 px-4 py-3 text-xs font-semibold transition-all rounded-xl border-none cursor-pointer ${
                       activeTab === 'reports'
-                        ? 'text-white bg-[#0052cc] shadow-md shadow-blue-900/10'
-                        : 'text-gray-400 hover:text-white hover:bg-white/5 border-transparent'
+                        ? 'text-white bg-indigo-600 shadow-md shadow-indigo-500/20'
+                        : 'text-slate-500 dark:text-slate-400 hover:text-indigo-600 dark:hover:text-indigo-400 hover:bg-slate-100/60 dark:hover:bg-slate-900/60'
                     }`}
                   >
                     <FileBarChart className="w-4 h-4 shrink-0" />
@@ -1988,10 +2016,10 @@ export default function App() {
 
                   <button
                     onClick={() => setActiveTab('audit_logs')}
-                    className={`w-full flex items-center gap-3 px-4 py-3 text-xs font-semibold transition-all rounded-xl ${
+                    className={`w-full flex items-center gap-3 px-4 py-3 text-xs font-semibold transition-all rounded-xl border-none cursor-pointer ${
                       activeTab === 'audit_logs'
-                        ? 'text-white bg-[#0052cc] shadow-md shadow-blue-900/10'
-                        : 'text-gray-400 hover:text-white hover:bg-white/5 border-transparent'
+                        ? 'text-white bg-indigo-600 shadow-md shadow-indigo-500/20'
+                        : 'text-slate-500 dark:text-slate-400 hover:text-indigo-600 dark:hover:text-indigo-400 hover:bg-slate-100/60 dark:hover:bg-slate-900/60'
                     }`}
                   >
                     <History className="w-4 h-4 shrink-0" />
@@ -2005,29 +2033,29 @@ export default function App() {
 
           {/* Quick Stats sidebar widget */}
           {currentUser && (
-            <div className="mt-auto hidden lg:block p-4 rounded-xl bg-white/5 border border-white/10 space-y-2.5">
-              <div className="text-[10px] font-black uppercase text-gray-500 tracking-wider">Session parameters:</div>
-              <div className="text-xs text-gray-400 space-y-1.5">
+            <div className="mt-auto hidden lg:block p-4 rounded-xl bg-slate-100/50 dark:bg-slate-900/60 border border-slate-200/60 dark:border-slate-800/60 space-y-2.5">
+              <div className="text-[10px] font-black uppercase text-slate-400 dark:text-slate-500 tracking-wider">Session parameters:</div>
+              <div className="text-xs text-slate-500 dark:text-slate-400 space-y-1.5">
                 <div className="flex justify-between">
-                  <span className="text-gray-500">MFA Safe:</span>
-                  <span className="font-bold text-green-400">ENFORCED</span>
+                  <span className="text-slate-400 dark:text-slate-500 font-medium">MFA Safe:</span>
+                  <span className="font-extrabold text-emerald-600 dark:text-emerald-400">ENFORCED</span>
                 </div>
                 <div className="flex justify-between">
-                  <span className="text-gray-500">Connection:</span>
-                  <span className="font-bold text-blue-400">SECURED</span>
+                  <span className="text-slate-400 dark:text-slate-500 font-medium">Connection:</span>
+                  <span className="font-extrabold text-indigo-600 dark:text-indigo-400">SECURED</span>
                 </div>
                 <div className="flex justify-between">
-                  <span className="text-gray-500">Host Tunnel:</span>
-                  <span className="font-medium text-gray-300">Cloud Run TLS</span>
+                  <span className="text-slate-400 dark:text-slate-500 font-medium">Host Tunnel:</span>
+                  <span className="font-semibold text-slate-700 dark:text-slate-300">Cloud Run TLS</span>
                 </div>
               </div>
             </div>
           )}
 
           {/* Utility Secure Channel */}
-          <div className="border-t border-[#1e293b] pt-4 flex items-center justify-between text-xs font-semibold text-gray-500 pl-2">
+          <div className="border-t border-slate-200/60 dark:border-slate-900/60 pt-4 flex items-center justify-between text-xs font-semibold text-slate-400 dark:text-slate-500 pl-2">
             <span>IAM Gateway</span>
-            <span className="flex items-center gap-1.5 text-[10px] font-bold text-emerald-400 bg-emerald-500/10 px-2 py-0.5 rounded-md border border-emerald-500/20">
+            <span className="flex items-center gap-1.5 text-[10px] font-bold text-emerald-600 dark:text-emerald-400 bg-emerald-500/10 px-2 py-0.5 rounded-md border border-emerald-500/20">
               ● ONLINE
             </span>
           </div>

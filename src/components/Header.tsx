@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { UserProfile, UserRole, AppNotification } from '../types';
-import { Bell, Key, LogOut, ShieldAlert, CheckSquare, Sparkles, User, RefreshCw, Layers, Search, Settings, X } from 'lucide-react';
+import { Bell, Key, LogOut, ShieldAlert, CheckSquare, Sparkles, User, RefreshCw, Layers, Search, Settings, X, Shield } from 'lucide-react';
 import SearchInput from './SearchInput';
 
 interface HeaderProps {
@@ -53,16 +53,19 @@ export default function Header({
   };
 
   return (
-    <header className="sticky top-0 z-40 bg-white/95 dark:bg-gray-900/95 backdrop-blur-md border-b border-gray-150 dark:border-gray-800/80 px-4 py-3 sm:px-6 sm:py-4 flex items-center justify-between">
+    <header className="sticky top-0 z-40 bg-white/95 dark:bg-slate-950/95 backdrop-blur-md border-b border-slate-200/60 dark:border-slate-900/60 px-4 py-3 sm:px-6 sm:py-4 flex items-center justify-between transition-all">
       
       {/* Brand area */}
       <div className="flex items-center gap-2.5">
-        <div className="w-9 h-9 rounded-xl bg-gray-900 dark:bg-white text-white dark:text-gray-900 flex items-center justify-center font-black text-sm tracking-tighter">
-          AR
+        <div className="bg-gradient-to-br from-indigo-600 to-blue-600 p-2 rounded-xl text-white shadow-md shadow-indigo-500/20">
+          <Shield className="w-5 h-5 animate-pulse" />
         </div>
         <div className="hidden sm:block">
-          <h1 className="text-sm font-black text-gray-950 dark:text-white leading-none tracking-tight">AccessPortal</h1>
-          <span className="text-[10px] text-gray-400 font-semibold tracking-wider uppercase block mt-0.5">Corporate IAM system</span>
+          <h1 className="text-sm font-extrabold text-slate-900 dark:text-white leading-none tracking-tight flex items-center gap-1">
+            IdentityFlow
+            <span className="text-[8px] bg-indigo-100 dark:bg-indigo-950/80 text-indigo-750 dark:text-indigo-400 font-extrabold px-1 py-0.5 rounded uppercase tracking-wider">v2.1</span>
+          </h1>
+          <span className="text-[10px] text-slate-400 dark:text-slate-500 font-bold tracking-wider uppercase block mt-0.5">Corporate Access Portal</span>
         </div>
       </div>
 
@@ -80,12 +83,12 @@ export default function Header({
 
       {/* Center simulation controller */}
       {currentUser && (
-        <div className="hidden lg:flex items-center gap-2 bg-blue-500/10 dark:bg-blue-500/10 border border-blue-200/40 dark:border-blue-900/30 px-3.5 py-1.5 rounded-xl text-xs">
-          <span className="font-bold text-blue-700 dark:text-blue-400 flex items-center gap-1.5 select-none animate-pulse">
-            <Sparkles className="w-3.5 h-3.5" />
+        <div className="hidden lg:flex items-center gap-2 bg-indigo-50 dark:bg-indigo-950/40 border border-indigo-100 dark:border-indigo-900 rounded-xl px-3.5 py-1.5 text-xs shadow-sm">
+          <span className="font-bold text-indigo-700 dark:text-indigo-400 flex items-center gap-1.5 select-none">
+            <Sparkles className="w-3.5 h-3.5 animate-pulse text-indigo-500" />
             <span>Active Persona Role:</span>
           </span>
-          <span className="bg-blue-600/10 text-blue-750 dark:text-blue-300 font-extrabold uppercase text-[10px] tracking-wider px-2 py-0.5 rounded-md select-none">
+          <span className="bg-indigo-100 dark:bg-indigo-950/80 text-indigo-705 dark:text-indigo-400 font-extrabold uppercase text-[10px] tracking-wider px-2 py-0.5 rounded-md select-none">
             {currentUser.role}
           </span>
         </div>

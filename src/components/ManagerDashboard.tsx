@@ -3,6 +3,7 @@ import { AccessRequest, ApprovalAction, UserProfile } from '../types';
 import { ClipboardCheck, Users, HelpCircle, CheckCircle, Search, Filter, MessageSquare, ArrowUpRight, BarChart2, CheckSquare, Clock, AlertTriangle } from 'lucide-react';
 import HighlightText from './HighlightText';
 import SearchInput from './SearchInput';
+import SharedDashboardContainer from './SharedDashboardContainer';
 
 interface ManagerDashboardProps {
   requests: AccessRequest[];
@@ -144,14 +145,18 @@ export default function ManagerDashboard({
     }
   };
 
+  const breadcrumbs = [
+    { label: 'IdentityFlow', active: false },
+    { label: 'Workspace', active: false },
+    { label: 'Manager Approvals', active: true }
+  ];
+
   return (
-    <div className="space-y-6">
-      
-      {/* Overview Title block */}
-      <div>
-        <h1 className="text-2xl font-black text-gray-950 dark:text-white tracking-tight">Manager Approval Dashboard</h1>
-        <p className="text-sm text-gray-500 mt-1">Review systems privileges, enforce enterprise security rules, and inspect audit activity trail.</p>
-      </div>
+    <SharedDashboardContainer
+      title="Manager Approval Dashboard"
+      subtitle="Review systems privileges, enforce enterprise security rules, and inspect audit activity trail."
+      breadcrumbItems={breadcrumbs}
+    >
 
       {/* Analytical Quick Stats */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
@@ -467,6 +472,6 @@ export default function ManagerDashboard({
 
       </div>
 
-    </div>
+    </SharedDashboardContainer>
   );
 }

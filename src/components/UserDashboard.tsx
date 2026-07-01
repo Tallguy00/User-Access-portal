@@ -3,6 +3,7 @@ import { AccessRequest, AuditLog, SupportTicket } from '../types';
 import { FolderUp, ShieldCheck, Activity, PlusCircle, Search, Filter, ShieldAlert, CheckCircle, Clock, XCircle, ArrowUpRight } from 'lucide-react';
 import HighlightText from './HighlightText';
 import SearchInput from './SearchInput';
+import SharedDashboardContainer from './SharedDashboardContainer';
 
 interface UserDashboardProps {
   requests: AccessRequest[];
@@ -118,24 +119,30 @@ export default function UserDashboard({
     }
   };
 
+  const breadcrumbs = [
+    { label: 'IdentityFlow', active: false },
+    { label: 'Workspace', active: false },
+    { label: 'Employee Access Workspace', active: true }
+  ];
+
+  const headerAction = (
+    <button
+      id="btn-trigger-request"
+      onClick={onOpenCreateModal}
+      className="btn-primary-minimal shrink-0"
+    >
+      <PlusCircle className="w-4 h-4" />
+      <span>New Access Request</span>
+    </button>
+  );
+
   return (
-    <div className="space-y-6">
-      
-      {/* Top Welcome Title Grid */}
-      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
-        <div>
-          <h1 className="text-2xl font-black text-gray-950 dark:text-white tracking-tight">Employee Access Workspace</h1>
-          <p className="text-sm text-gray-500 mt-1">Submit, monitor, and audit your organization security and systems access permissions.</p>
-        </div>
-        <button
-          id="btn-trigger-request"
-          onClick={onOpenCreateModal}
-          className="btn-primary-minimal shrink-0"
-        >
-          <PlusCircle className="w-4 h-4" />
-          <span>New Access Request</span>
-        </button>
-      </div>
+    <SharedDashboardContainer
+      title="Employee Access Workspace"
+      subtitle="Submit, monitor, and audit your organization security and systems access permissions."
+      breadcrumbItems={breadcrumbs}
+      action={headerAction}
+    >
 
       {/* Metrics Cards */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
@@ -473,6 +480,6 @@ export default function UserDashboard({
 
       </div>
 
-    </div>
+    </SharedDashboardContainer>
   );
 }

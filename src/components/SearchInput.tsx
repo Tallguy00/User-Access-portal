@@ -22,10 +22,8 @@ export default function SearchInput({
 
   return (
     <div className={`relative flex-1 ${containerClassName}`}>
-      {/* Non-interactive search icon */}
-      <div className="absolute right-3.5 inset-y-0 flex items-center justify-center pointer-events-none text-gray-400 dark:text-gray-500">
-        <Search className="w-4 h-4" />
-      </div>
+      {/* Search icon */}
+      <Search className="absolute right-3.5 top-2.5 w-4 h-4 text-slate-400 dark:text-slate-500 pointer-events-none" />
 
       {/* Styled text input */}
       <input
@@ -34,7 +32,9 @@ export default function SearchInput({
         value={value}
         onChange={(e) => onChange(e.target.value)}
         placeholder={placeholder}
-        className={`h-10 w-full pl-10 pr-9 py-2 bg-white dark:bg-gray-850 border border-gray-200 dark:border-gray-700/80 rounded-xl text-xs sm:text-sm text-gray-900 dark:text-white placeholder:text-gray-400 dark:placeholder:text-gray-500 focus:outline-none focus:ring-2 focus:ring-blue-500/25 focus:border-blue-500 dark:focus:border-blue-400 transition-all shadow-sm ${className}`}
+        className={`w-full pl-10 pr-8 py-2 text-xs border rounded-xl focus:outline-none transition-all ${
+          className || ''
+        } bg-slate-50 border-slate-200 text-slate-900 dark:bg-slate-950 dark:border-slate-800 dark:text-white placeholder:text-slate-400 dark:placeholder:text-slate-500 focus:border-slate-350 dark:focus:border-slate-700`}
       />
 
       {/* Interactive clear button */}
@@ -42,7 +42,7 @@ export default function SearchInput({
         <button
           type="button"
           onClick={() => onChange('')}
-          className="absolute right-3 inset-y-0 flex items-center justify-center text-gray-400 hover:text-gray-600 dark:hover:text-gray-200 transition-colors cursor-pointer"
+          className="absolute right-3 top-2.5 flex items-center justify-center text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 transition-colors cursor-pointer"
           aria-label="Clear search"
           id={`${uniqueId}-clear`}
         >

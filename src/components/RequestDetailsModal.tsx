@@ -710,34 +710,34 @@ export default function RequestDetailsModal({
                           Spreadsheet: {f.name}
                         </div>
                         <div className="overflow-x-auto border border-gray-200 dark:border-gray-800 rounded-xl bg-white dark:bg-gray-900">
-                          <table className="w-full text-left text-[11px] font-medium border-collapse">
+                          <table className="table-standard border-collapse">
                             <thead>
-                              <tr className="bg-gray-50 dark:bg-gray-950 border-b border-gray-150 dark:border-gray-800 text-[10px] font-bold text-gray-500 uppercase tracking-wider">
-                                <th className="p-2 border-r border-gray-150 dark:border-gray-800">Item Node</th>
-                                <th className="p-2 border-r border-gray-150 dark:border-gray-800">Security Gate Requirement</th>
-                                <th className="p-2">Audited State</th>
+                              <tr className="table-header-row text-gray-500 uppercase tracking-wider">
+                                <th className="th-standard border-r border-gray-150 dark:border-gray-800">Item Node</th>
+                                <th className="th-standard border-r border-gray-150 dark:border-gray-800">Security Gate Requirement</th>
+                                <th className="th-standard">Audited State</th>
                               </tr>
                             </thead>
                             <tbody className="divide-y divide-gray-150 dark:divide-gray-800 font-mono">
                               <tr>
-                                <td className="p-2 border-r border-gray-150 dark:border-gray-800 font-bold text-gray-900 dark:text-gray-100">C-01</td>
-                                <td className="p-2 border-r border-gray-150 dark:border-gray-800 text-gray-600 dark:text-gray-300">Identity Background Screening Checked</td>
-                                <td className="p-2 text-emerald-600 dark:text-emerald-450 font-black">✓ VERIFIED</td>
+                                <td className="td-standard border-r border-gray-150 dark:border-gray-800 font-bold text-gray-900 dark:text-gray-100">C-01</td>
+                                <td className="td-standard border-r border-gray-150 dark:border-gray-800 text-gray-600 dark:text-gray-300">Identity Background Screening Checked</td>
+                                <td className="td-standard text-emerald-600 dark:text-emerald-450 font-black">✓ VERIFIED</td>
                               </tr>
                               <tr>
-                                <td className="p-2 border-r border-gray-150 dark:border-gray-800 font-bold text-gray-900 dark:text-gray-100">C-02</td>
-                                <td className="p-2 border-r border-gray-150 dark:border-gray-800 text-gray-600 dark:text-gray-300">Sponsoring Manager Credentials Validated</td>
-                                <td className="p-2 text-emerald-600 dark:text-emerald-450 font-black">✓ SECURED</td>
+                                <td className="td-standard border-r border-gray-150 dark:border-gray-800 font-bold text-gray-900 dark:text-gray-100">C-02</td>
+                                <td className="td-standard border-r border-gray-150 dark:border-gray-800 text-gray-600 dark:text-gray-300">Sponsoring Manager Credentials Validated</td>
+                                <td className="td-standard text-emerald-600 dark:text-emerald-450 font-black">✓ SECURED</td>
                               </tr>
                                <tr>
-                                <td className="p-2 border-r border-gray-150 dark:border-gray-800 font-bold text-gray-900 dark:text-gray-100">C-03</td>
-                                <td className="p-2 border-r border-gray-150 dark:border-gray-800 text-gray-600 dark:text-gray-300">Justified Professional Engagement Scope</td>
-                                <td className="p-2 text-emerald-600 dark:text-emerald-450 font-black">✓ APPLICABLE</td>
+                                <td className="td-standard border-r border-gray-150 dark:border-gray-800 font-bold text-gray-900 dark:text-gray-100">C-03</td>
+                                <td className="td-standard border-r border-gray-150 dark:border-gray-800 text-gray-600 dark:text-gray-300">Justified Professional Engagement Scope</td>
+                                <td className="td-standard text-emerald-600 dark:text-emerald-450 font-black">✓ APPLICABLE</td>
                               </tr>
                               <tr>
-                                <td className="p-2 border-r border-gray-150 dark:border-gray-800 font-bold text-gray-900 dark:text-gray-100">C-04</td>
-                                <td className="p-2 border-r border-gray-150 dark:border-gray-800 text-gray-600 dark:text-gray-300">Security Device Registry Enrollment</td>
-                                <td className="p-2 text-amber-600 dark:text-amber-450 font-black">⚠️ ENROUTE</td>
+                                <td className="td-standard border-r border-gray-150 dark:border-gray-800 font-bold text-gray-900 dark:text-gray-100">C-04</td>
+                                <td className="td-standard border-r border-gray-150 dark:border-gray-800 text-gray-600 dark:text-gray-300">Security Device Registry Enrollment</td>
+                                <td className="td-standard text-amber-600 dark:text-amber-450 font-black">⚠️ ENROUTE</td>
                               </tr>
                             </tbody>
                           </table>

@@ -4,7 +4,7 @@ import { UserRole, Department, UserProfile } from '../types';
 import { 
   AlertCircle, Lock, Mail, User, ShieldCheck, ArrowRight, 
   Sparkles, Building, KeyRound, Info, Eye, EyeOff, 
-  Check, Shield, Timer, RefreshCw
+  Check, Shield, Timer, RefreshCw, Menu, X
 } from 'lucide-react';
 
 // Validation helper for E.164 format (starts with +, followed by 7 to 15 digits)
@@ -19,81 +19,152 @@ export function AuthLayout({
   onNavigate 
 }: { 
   children: React.ReactNode; 
-  currentPage: 'login' | 'register' | 'forgot' | 'reset'; 
-  onNavigate: (page: 'login' | 'register' | 'forgot' | 'reset') => void 
+  currentPage: 'landing' | 'login' | 'register' | 'forgot' | 'reset' | 'dashboard'; 
+  onNavigate: (page: 'landing' | 'login' | 'register' | 'forgot' | 'reset' | 'dashboard') => void 
 }) {
   const isLogin = currentPage === 'login';
   const isRegister = currentPage === 'register';
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
   return (
-    <div className="min-h-screen w-full flex flex-col md:flex-row bg-white dark:bg-gray-950 transition-colors duration-200">
-      {/* Left side panel - visible on md and up */}
-      <div className="hidden md:flex md:w-1/2 bg-[#0052cc] p-16 text-white flex-col justify-between relative overflow-hidden">
-        {/* Logo Section */}
-        <div className="flex items-center gap-2.5 z-10">
-          <Shield className="w-6 h-6 fill-none stroke-white stroke-2" />
-          <span className="font-bold text-xl tracking-tight">Access Portal</span>
+    <div className="min-h-screen bg-slate-50 dark:bg-slate-950 font-sans transition-colors duration-200 selection:bg-indigo-500 selection:text-white relative pb-16">
+      
+      {/* Floating Background Glows */}
+      <div className="absolute top-0 inset-x-0 h-96 bg-gradient-to-b from-indigo-100/30 to-transparent dark:from-indigo-950/20 pointer-events-none z-0" />
+      <div className="absolute top-[400px] left-10 w-72 h-72 bg-blue-400/10 dark:bg-blue-600/5 rounded-full blur-3xl pointer-events-none z-0" />
+      <div className="absolute top-[200px] right-10 w-96 h-96 bg-indigo-400/10 dark:bg-indigo-600/5 rounded-full blur-3xl pointer-events-none z-0" />
+
+      {/* Navigation Bar matching the landing page */}
+      <nav id="landing-navbar" className="sticky top-0 z-50 bg-white/95 dark:bg-slate-950/95 backdrop-blur-md border-b border-slate-200/60 dark:border-slate-900/60 transition-all">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="flex items-center justify-between h-16">
+            
+            {/* Logo Section */}
+            <button 
+              onClick={() => onNavigate('landing')}
+              className="flex items-center gap-2.5 bg-transparent border-none p-0 cursor-pointer text-left focus:outline-none"
+            >
+              <div className="bg-gradient-to-br from-indigo-600 to-blue-600 p-2 rounded-xl text-white shadow-md shadow-indigo-500/20">
+                <Shield className="w-5 h-5 animate-pulse" />
+              </div>
+              <div>
+                <span className="font-extrabold text-base text-slate-900 dark:text-white tracking-tight flex items-center gap-1.5">
+                  IdentityFlow
+                  <span className="text-[9px] bg-indigo-100 dark:bg-indigo-950/80 text-indigo-700 dark:text-indigo-400 font-bold px-1.5 py-0.5 rounded uppercase tracking-wider">v2.1</span>
+                </span>
+              </div>
+            </button>
+
+            {/* Desktop Nav Links */}
+            <div className="hidden md:flex items-center gap-6">
+              <button onClick={() => onNavigate('landing')} className="text-xs font-bold text-slate-600 dark:text-slate-350 hover:text-indigo-600 dark:hover:text-indigo-400 transition-colors cursor-pointer bg-transparent border-none">Home</button>
+              <span className="text-slate-200 dark:text-slate-800">|</span>
+              <span className="text-xs font-extrabold text-indigo-600 dark:text-indigo-455 uppercase tracking-widest bg-indigo-50 dark:bg-indigo-950/40 px-2.5 py-1 rounded-md">Enterprise Gateway</span>
+            </div>
+
+            {/* Access Buttons */}
+            <div className="hidden md:flex items-center gap-3">
+              <button 
+                onClick={() => onNavigate('login')}
+                className={`text-xs font-bold px-3.5 py-2 rounded-lg transition-colors cursor-pointer bg-transparent border-none ${isLogin ? 'text-indigo-600 dark:text-indigo-400' : 'text-slate-700 dark:text-slate-350 hover:text-indigo-600 dark:hover:text-indigo-400'}`}
+                id="nav-signin-btn"
+              >
+                Sign In
+              </button>
+              <button 
+                onClick={() => onNavigate('register')}
+                className={`font-bold text-xs px-4.5 py-2 rounded-xl shadow-sm hover:shadow-md transition-all cursor-pointer border-none ${isRegister ? 'bg-[#0052cc] hover:bg-blue-700 text-white animate-pulse' : 'bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 text-slate-800 dark:text-slate-300'}`}
+                id="nav-getstarted-btn"
+              >
+                Create Account
+              </button>
+            </div>
+
+            {/* Mobile Hamburger Button */}
+            <div className="flex md:hidden items-center">
+              <button 
+                onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
+                className="p-2 text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-white cursor-pointer bg-transparent border-none"
+                id="mobile-menu-toggle"
+              >
+                {mobileMenuOpen ? <X className="w-5 h-5" /> : <Menu className="w-5 h-5" />}
+              </button>
+            </div>
+
+          </div>
         </div>
 
-        {/* Hero Copy */}
-        <div className="max-w-md z-10 space-y-4 my-auto">
-          <h1 className="text-4xl font-black tracking-tight leading-tight">
-            Secure access, simplified.
+        {/* Mobile menu panel */}
+        {mobileMenuOpen && (
+          <div className="md:hidden bg-white dark:bg-slate-950 border-b border-slate-200 dark:border-slate-900 px-4 py-4 space-y-2 flex flex-col">
+            <button onClick={() => { onNavigate('landing'); setMobileMenuOpen(false); }} className="text-left py-2 text-xs font-bold text-slate-600 dark:text-slate-350 hover:text-indigo-600 dark:hover:text-indigo-400 transition-colors bg-transparent border-none">Home</button>
+            <div className="pt-4 border-t border-slate-100 dark:border-slate-900 flex items-center gap-3">
+              <button onClick={() => { onNavigate('login'); setMobileMenuOpen(false); }} className={`flex-1 text-center py-2 border text-xs font-bold rounded-xl bg-transparent ${isLogin ? 'border-indigo-600 text-indigo-600' : 'border-slate-200 dark:border-slate-800 text-slate-750 dark:text-slate-300'}`}>Sign In</button>
+              <button onClick={() => { onNavigate('register'); setMobileMenuOpen(false); }} className={`flex-1 text-center py-2 text-xs font-bold rounded-xl border-none ${isRegister ? 'bg-[#0052cc] text-white' : 'bg-slate-100 dark:bg-slate-800 text-slate-750 dark:text-slate-300'}`}>Register</button>
+            </div>
+          </div>
+        )}
+      </nav>
+
+      {/* Main content center grid */}
+      <div className="relative z-10 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-8 md:pt-12 flex flex-col items-center">
+        
+        {/* Welcome branding block */}
+        <div className="text-center space-y-3 mb-8">
+          <div className="inline-flex items-center gap-2 px-3 py-1 bg-indigo-50 dark:bg-indigo-950/40 border border-indigo-100 dark:border-indigo-900 rounded-full text-[10px] font-bold text-indigo-700 dark:text-indigo-450 shadow-sm uppercase tracking-wider">
+            <span className="w-1.5 h-1.5 bg-emerald-500 rounded-full animate-ping"></span>
+            <span>SECURE ENTERPRISE AUTHENTICATION ENDPOINT</span>
+          </div>
+          <h1 className="text-3xl md:text-4xl font-black text-slate-900 dark:text-white tracking-tight leading-none">
+            IdentityFlow Access
           </h1>
-          <p className="text-blue-100 text-sm leading-relaxed font-medium">
-            Submit requests, route approvals, and keep a full audit trail — all from a single, role-aware portal.
+        </div>
+
+        {/* Auth form sheet card */}
+        <div className="w-full max-w-md bg-white dark:bg-slate-900/85 backdrop-blur-md border border-slate-200/70 dark:border-slate-800/85 shadow-2xl rounded-2xl p-6 sm:p-10 relative overflow-hidden transition-all duration-300">
+          
+          {/* Subtle color top bar indicator */}
+          <div className="absolute top-0 inset-x-0 h-1 bg-gradient-to-r from-indigo-500 via-blue-500 to-emerald-500"></div>
+
+          {/* Capsule Tab Switcher - only for login & register pages */}
+          {(isLogin || isRegister) && (
+            <div className="mb-6 p-1 bg-slate-100 dark:bg-slate-800/80 rounded-full flex items-center justify-center shadow-inner">
+              <button
+                onClick={() => onNavigate('login')}
+                className={`flex-1 py-2 rounded-full text-xs font-extrabold transition-all border-none cursor-pointer ${
+                  isLogin 
+                    ? 'bg-white dark:bg-slate-700 text-indigo-600 dark:text-white shadow-sm' 
+                    : 'text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-200 bg-transparent'
+                }`}
+              >
+                Sign in
+              </button>
+              <button
+                onClick={() => onNavigate('register')}
+                className={`flex-1 py-2 rounded-full text-xs font-extrabold transition-all border-none cursor-pointer ${
+                  isRegister 
+                    ? 'bg-white dark:bg-slate-700 text-indigo-600 dark:text-white shadow-sm' 
+                    : 'text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-200 bg-transparent'
+                }`}
+              >
+                Create account
+              </button>
+            </div>
+          )}
+
+          <div className="space-y-6">
+            {children}
+          </div>
+        </div>
+
+        {/* Bottom micro security indicator */}
+        <div className="mt-8 text-center max-w-md">
+          <p className="text-[10px] text-slate-400 dark:text-slate-500 font-bold uppercase tracking-widest flex items-center justify-center gap-1.5">
+            <ShieldCheck className="w-3.5 h-3.5 text-indigo-500" />
+            <span>Immutable Roster Auditing & GDPR/SOC2 Certified</span>
           </p>
         </div>
 
-        {/* Footer */}
-        <div className="text-xs text-blue-200 z-10 font-medium">
-          © 2026 Access Portal
-        </div>
-
-        {/* Subtle background gradients for depth */}
-        <div className="absolute top-[-20%] right-[-20%] w-[60%] h-[60%] rounded-full bg-blue-500 opacity-20 blur-3xl pointer-events-none"></div>
-        <div className="absolute bottom-[-10%] left-[-10%] w-[50%] h-[50%] rounded-full bg-blue-700 opacity-30 blur-3xl pointer-events-none"></div>
-      </div>
-
-      {/* Right side form container */}
-      <div className="w-full md:w-1/2 flex flex-col items-center justify-center p-6 sm:p-16 relative bg-white dark:bg-gray-900 overflow-y-auto">
-        
-        {/* Top Header for Mobile only */}
-        <div className="flex md:hidden items-center gap-2 mb-8 self-start">
-          <Shield className="w-6 h-6 text-[#0052cc] fill-none stroke-[#0052cc]" />
-          <span className="font-bold text-lg tracking-tight text-gray-900 dark:text-white">Access Portal</span>
-        </div>
-
-        {/* Capsule Tab Switcher - only for login & register pages */}
-        {(isLogin || isRegister) && (
-          <div className="mb-8 p-1 bg-gray-100 dark:bg-gray-800 rounded-full flex items-center justify-center shadow-inner">
-            <button
-              onClick={() => onNavigate('login')}
-              className={`px-6 py-2 rounded-full text-xs font-bold transition-all border-none cursor-pointer ${
-                isLogin 
-                  ? 'bg-white dark:bg-gray-700 text-gray-900 dark:text-white shadow-sm' 
-                  : 'text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200 bg-transparent'
-              }`}
-            >
-              Sign in
-            </button>
-            <button
-              onClick={() => onNavigate('register')}
-              className={`px-6 py-2 rounded-full text-xs font-bold transition-all border-none cursor-pointer ${
-                isRegister 
-                  ? 'bg-white dark:bg-gray-700 text-gray-900 dark:text-white shadow-sm' 
-                  : 'text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200 bg-transparent'
-              }`}
-            >
-              Create account
-            </button>
-          </div>
-        )}
-
-        {/* Auth form sheet card */}
-        <div className="w-full max-w-md space-y-6">
-          {children}
-        </div>
       </div>
     </div>
   );
@@ -101,7 +172,7 @@ export function AuthLayout({
 
 interface LoginScreenProps {
   onSuccess: (email: string) => void;
-  onNavigate: (page: 'login' | 'register' | 'forgot' | 'reset') => void;
+  onNavigate: (page: 'landing' | 'login' | 'register' | 'forgot' | 'reset' | 'dashboard') => void;
   profiles: UserProfile[];
 }
 
@@ -443,8 +514,7 @@ export function LoginScreen({ onSuccess, onNavigate, profiles }: LoginScreenProp
 
       {/* SYSTEM PASSWORD SIGN IN METHOD */}
       <form onSubmit={handlePasswordLogin} className="space-y-4">
-        <div className=" relative">
-        <Mail className="absolute right-3.5 top-6.5 w-4 h-4 text-gray-400" />
+        <div className="space-y-1.5">
           <label className="block text-xs font-bold text-gray-700 dark:text-gray-300">Email</label>
           <input
             id="login-email"
@@ -578,7 +648,7 @@ export function LoginScreen({ onSuccess, onNavigate, profiles }: LoginScreenProp
 
 interface RegisterScreenProps {
   onSuccess: (email: string, details: { fullName: string; role: UserRole; departmentId: string }) => void;
-  onNavigate: (page: 'login' | 'register' | 'forgot' | 'reset') => void;
+  onNavigate: (page: 'landing' | 'login' | 'register' | 'forgot' | 'reset' | 'dashboard') => void;
   departments: Department[];
   profiles: UserProfile[];
 }
@@ -686,11 +756,9 @@ export function RegisterScreen({ onSuccess, onNavigate, departments, profiles }:
 
       <div>
         <form onSubmit={startRegistrationFlow} className="space-y-4">
-        <div className="relative">
           <div className="space-y-1.5">
-          <User className="absolute right-3.5 top-8 w-4 h-4 text-gray-400" />
             <label className="block text-xs font-bold text-gray-700 dark:text-gray-300">Full Name</label>
-            
+            <div className="relative">
               <input
                 id="register-name"
                 type="text"
@@ -704,10 +772,8 @@ export function RegisterScreen({ onSuccess, onNavigate, departments, profiles }:
           </div>
 
           <div className="space-y-1.5">
-          <div className="relative">
-          <Mail className="absolute right-3.5 top-6.5 w-4 h-4 text-gray-400" />
             <label className="block text-xs font-bold text-gray-700 dark:text-gray-300">Corporate Email</label>
-            
+            <div className="relative">
               <input
                 id="register-email"
                 type="email"
@@ -860,7 +926,7 @@ export function RegisterScreen({ onSuccess, onNavigate, departments, profiles }:
   );
 }
 
-export function ForgotPasswordScreen({ onNavigate }: { onNavigate: (page: 'login' | 'register' | 'forgot' | 'reset') => void }) {
+export function ForgotPasswordScreen({ onNavigate }: { onNavigate: (page: 'landing' | 'login' | 'register' | 'forgot' | 'reset' | 'dashboard') => void }) {
   const [email, setEmail] = useState('');
   const [loading, setLoading] = useState(false);
   const [success, setSuccess] = useState(false);
@@ -878,84 +944,82 @@ export function ForgotPasswordScreen({ onNavigate }: { onNavigate: (page: 'login
   };
 
   return (
-    <div className="min-h-[calc(100vh-6rem)] flex items-center justify-center p-4">
-      <div id="forgot-container" className="w-full max-w-md bg-white dark:bg-gray-900 border border-gray-150 dark:border-gray-800 rounded-3xl p-8 shadow-xl space-y-6 animate-modal-slide">
-        
-        <div className="text-center space-y-2">
-          <div className="inline-flex p-3 bg-blue-50 dark:bg-blue-950/20 rounded-2xl">
-            <KeyRound className="w-6 h-6 text-blue-600" />
-          </div>
-          <h2 className="text-2xl font-black text-gray-950 dark:text-white tracking-tight">Identity Recovery Desk</h2>
-          <p className="text-xs text-gray-500 max-w-xs mx-auto">Verify your validated coordinates to dispatch secure password reset locks.</p>
+    <div className="space-y-6 animate-modal-slide">
+      
+      <div className="text-center space-y-2">
+        <div className="inline-flex p-3 bg-blue-50 dark:bg-blue-950/20 rounded-2xl">
+          <KeyRound className="w-6 h-6 text-indigo-600" />
         </div>
+        <h2 className="text-2xl font-black text-gray-955 dark:text-white tracking-tight">Identity Recovery Desk</h2>
+        <p className="text-xs text-gray-500 max-w-xs mx-auto">Verify your validated coordinates to dispatch secure password reset locks.</p>
+      </div>
 
-        {success ? (
-          <div className="space-y-4 text-xs">
-            <div className="p-4 bg-green-50 dark:bg-green-955 border border-green-200/50 rounded-xl text-green-800 dark:text-green-300 leading-relaxed space-y-1">
-              <div className="font-bold flex items-center gap-1">
-                <Check className="w-4 h-4 text-green-600" />
-                <span>Identity Authenticated Securely</span>
-              </div>
-              <p>Your password recovery pipeline validation succeeded. Click below to establish a new security ledger password.</p>
+      {success ? (
+        <div className="space-y-4 text-xs">
+          <div className="p-4 bg-green-50 dark:bg-green-955 border border-green-200/50 rounded-xl text-green-800 dark:text-green-300 leading-relaxed space-y-1">
+            <div className="font-bold flex items-center gap-1">
+              <Check className="w-4 h-4 text-green-600" />
+              <span>Identity Authenticated Securely</span>
             </div>
-            
-            <button
-              onClick={() => onNavigate('reset')}
-              className="w-full py-2.5 bg-gray-900 border text-white dark:bg-white dark:text-gray-900 rounded-xl text-xs font-bold transition-all text-center flex items-center justify-center gap-1"
-            >
-              <span>Establish New Password</span>
-              <ArrowRight className="w-3.5 h-3.5" />
-            </button>
+            <p>Your password recovery pipeline validation succeeded. Click below to establish a new security ledger password.</p>
           </div>
-        ) : (
-          <form onSubmit={handleResetRequest} className="space-y-4">
-            <div className="space-y-1.5">
-              <label className="block text-xs font-bold text-gray-600 dark:text-gray-400">Corporate Email Address</label>
-              <div className="relative">
-                <Mail className="absolute left-3 top-3 w-4 h-4 text-gray-400" />
-                <input
-                  type="email"
-                  required
-                  value={email}
-                  onChange={(e) => setEmail(e.target.value)}
-                  placeholder="employee.jane@company.com"
-                  className="w-full pl-9 pr-3 py-2.5 bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl text-sm text-gray-950 dark:text-white"
-                />
-              </div>
-            </div>
-
-            {errorMsg && (
-              <div className="p-3 bg-red-50 text-red-705 rounded-lg text-xs leading-normal">
-                {errorMsg}
-              </div>
-            )}
-
-            <button
-              type="submit"
-              disabled={loading}
-              className="btn-primary-minimal w-full py-2.5 text-sm font-semibold flex items-center justify-center gap-1.5"
-            >
-              {loading ? 'Dispatching...' : 'Dispatch Recovery Token'}
-            </button>
-          </form>
-        )}
-
-        <div className="text-center pt-2">
+          
           <button
-            type="button"
-            onClick={() => onNavigate('login')}
-            className="text-xs text-blue-600 dark:text-blue-400 font-bold hover:underline bg-transparent"
+            onClick={() => onNavigate('reset')}
+            className="w-full py-2.5 bg-gray-900 border text-white dark:bg-white dark:text-gray-900 rounded-xl text-xs font-bold transition-all text-center flex items-center justify-center gap-1 cursor-pointer border-none"
           >
-            ← Back to Directory Login
+            <span>Establish New Password</span>
+            <ArrowRight className="w-3.5 h-3.5" />
           </button>
         </div>
+      ) : (
+        <form onSubmit={handleResetRequest} className="space-y-4">
+          <div className="space-y-1.5">
+            <label className="block text-xs font-bold text-gray-600 dark:text-gray-400">Corporate Email Address</label>
+            <div className="relative">
+              <Mail className="absolute left-3 top-3 w-4 h-4 text-gray-400" />
+              <input
+                type="email"
+                required
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                placeholder="employee.jane@company.com"
+                className="w-full pl-9 pr-3 py-2.5 bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-750 rounded-xl text-sm text-gray-955 dark:text-white"
+              />
+            </div>
+          </div>
 
+          {errorMsg && (
+            <div className="p-3 bg-red-50 text-red-705 rounded-lg text-xs leading-normal">
+              {errorMsg}
+            </div>
+          )}
+
+          <button
+            type="submit"
+            disabled={loading}
+            className="w-full py-2.5 bg-[#0052cc] hover:bg-blue-700 text-white font-bold text-sm rounded-xl transition-all cursor-pointer flex items-center justify-center gap-1.5 shadow-sm active:scale-[0.98] border-none"
+          >
+            {loading ? 'Dispatching...' : 'Dispatch Recovery Token'}
+          </button>
+        </form>
+      )}
+
+      <div className="text-center pt-2">
+        <button
+          type="button"
+          onClick={() => onNavigate('login')}
+          className="text-xs text-blue-600 dark:text-blue-400 font-bold hover:underline bg-transparent border-none cursor-pointer"
+        >
+          ← Back to Directory Login
+        </button>
       </div>
+
     </div>
   );
 }
 
-export function ResetPasswordScreen({ onNavigate }: { onNavigate: (page: 'login' | 'register' | 'forgot' | 'reset') => void }) {
+export function ResetPasswordScreen({ onNavigate }: { onNavigate: (page: 'landing' | 'login' | 'register' | 'forgot' | 'reset' | 'dashboard') => void }) {
   const [newPassword, setNewPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
   const [loading, setLoading] = useState(false);
@@ -977,75 +1041,73 @@ export function ResetPasswordScreen({ onNavigate }: { onNavigate: (page: 'login'
   };
 
   return (
-    <div className="min-h-[calc(100vh-6rem)] flex items-center justify-center p-4">
-      <div id="reset-container" className="w-full max-w-md bg-white dark:bg-gray-900 border border-gray-150 dark:border-gray-800 rounded-3xl p-8 shadow-xl space-y-6 animate-modal-slide">
-        
-        <div className="text-center space-y-1.5">
-          <div className="inline-flex p-3 bg-blue-50 dark:bg-blue-950 rounded-2xl">
-            <Lock className="w-6 h-6 text-blue-600" />
-          </div>
-          <h2 className="text-2xl font-black text-gray-950 dark:text-white tracking-tight">Establish New Password</h2>
-          <p className="text-xs text-gray-500 max-w-xs mx-auto">Update your cryptographic credentials database listing. Session token checks will enforce logout globally.</p>
+    <div className="space-y-6 animate-modal-slide">
+      
+      <div className="text-center space-y-1.5">
+        <div className="inline-flex p-3 bg-blue-50 dark:bg-blue-950 rounded-2xl">
+          <Lock className="w-6 h-6 text-indigo-600" />
         </div>
-
-        {success ? (
-          <div className="space-y-4">
-            <div className="p-4 bg-green-50 dark:bg-green-950/20 border border-green-200/50 rounded-xl text-green-800 dark:text-green-300 text-xs font-semibold leading-relaxed">
-              Successfully patched registry passwords! You can now log back into the active directory using your newly compiled credentials.
-            </div>
-            
-            <button
-              onClick={() => onNavigate('login')}
-              className="w-full py-2.5 bg-gray-900 text-white dark:bg-white dark:text-gray-900 font-bold text-xs rounded-xl"
-            >
-              Sign In with New Password
-            </button>
-          </div>
-        ) : (
-          <form onSubmit={handleUpdate} className="space-y-4">
-            
-            <div className="space-y-1">
-              <label className="block text-xs font-bold text-gray-650 dark:text-gray-400">Establish new password</label>
-              <input
-                type="password"
-                required
-                value={newPassword}
-                onChange={(e) => setNewPassword(e.target.value)}
-                placeholder="••••••••••••"
-                className="w-full px-3 py-2.5 bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl text-sm"
-              />
-            </div>
-
-            <div className="space-y-1">
-              <label className="block text-xs font-bold text-gray-650 dark:text-gray-400">Confirm new password</label>
-              <input
-                type="password"
-                required
-                value={confirmPassword}
-                onChange={(e) => setConfirmPassword(e.target.value)}
-                placeholder="••••••••••••"
-                className="w-full px-3 py-2.5 bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl text-sm"
-              />
-            </div>
-
-            {err && (
-              <div className="flex items-start gap-2 p-3 bg-red-50 dark:bg-red-950/25 border border-red-200 rounded-lg text-red-700 dark:text-red-400 text-xs">
-                <AlertCircle className="w-4 h-4 mt-0.5 shrink-0" />
-                <span>{err}</span>
-              </div>
-            )}
-
-            <button
-              type="submit"
-              disabled={loading}
-              className="btn-primary-minimal w-full py-2.5 text-sm font-semibold"
-            >
-              {loading ? 'Encrypting registry keys...' : 'Commit New Password'}
-            </button>
-          </form>
-        )}
-
+        <h2 className="text-2xl font-black text-gray-955 dark:text-white tracking-tight">Establish New Password</h2>
+        <p className="text-xs text-gray-500 max-w-xs mx-auto">Update your cryptographic credentials database listing. Session token checks will enforce logout globally.</p>
       </div>
+
+      {success ? (
+        <div className="space-y-4">
+          <div className="p-4 bg-green-50 dark:bg-green-955 border border-green-200/50 rounded-xl text-green-800 dark:text-green-300 text-xs font-semibold leading-relaxed">
+            Successfully patched registry passwords! You can now log back into the active directory using your newly compiled credentials.
+          </div>
+          
+          <button
+            onClick={() => onNavigate('login')}
+            className="w-full py-2.5 bg-gray-900 text-white dark:bg-white dark:text-gray-900 font-bold text-xs rounded-xl"
+          >
+            Sign In with New Password
+          </button>
+        </div>
+      ) : (
+        <form onSubmit={handleUpdate} className="space-y-4">
+          
+          <div className="space-y-1">
+            <label className="block text-xs font-bold text-gray-655 dark:text-gray-400">Establish new password</label>
+            <input
+              type="password"
+              required
+              value={newPassword}
+              onChange={(e) => setNewPassword(e.target.value)}
+              placeholder="••••••••••••"
+              className="w-full px-3 py-2.5 bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-750 rounded-xl text-sm"
+            />
+          </div>
+
+          <div className="space-y-1">
+            <label className="block text-xs font-bold text-gray-655 dark:text-gray-400">Confirm new password</label>
+            <input
+              type="password"
+              required
+              value={confirmPassword}
+              onChange={(e) => setConfirmPassword(e.target.value)}
+              placeholder="••••••••••••"
+              className="w-full px-3 py-2.5 bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-750 rounded-xl text-sm"
+            />
+          </div>
+
+          {err && (
+            <div className="flex items-start gap-2 p-3 bg-red-50 dark:bg-red-955/25 border border-red-200 rounded-lg text-red-700 dark:text-red-400 text-xs">
+              <AlertCircle className="w-4 h-4 mt-0.5 shrink-0" />
+              <span>{err}</span>
+            </div>
+          )}
+
+          <button
+            type="submit"
+            disabled={loading}
+            className="w-full py-2.5 bg-[#0052cc] hover:bg-blue-700 text-white font-bold text-sm rounded-xl transition-all cursor-pointer flex items-center justify-center gap-1.5 shadow-sm active:scale-[0.98] border-none"
+          >
+            {loading ? 'Encrypting registry keys...' : 'Commit New Password'}
+          </button>
+        </form>
+      )}
+
     </div>
   );
 }

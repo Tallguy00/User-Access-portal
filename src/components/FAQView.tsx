@@ -87,6 +87,36 @@ const DEFAULT_FAQS: FAQItem[] = [
     category: 'Technical Support',
     question: 'Who should I contact if I need help?',
     answer: 'Contact your system administrator or the IT support team using the Support page.'
+  },
+  {
+    id: 'faq-9',
+    category: 'Access Requests',
+    question: 'How do I request urgent or expedited review for my request?',
+    answer: 'You can toggle the "Urgent Priority" status indicator during request creation. This alerts Department Managers and IT Admins of critical deadlines. You can also open an urgent ticket via the Support channel if immediate escalation is necessary.'
+  },
+  {
+    id: 'faq-10',
+    category: 'Approvals',
+    question: 'How long do access request approvals typically take?',
+    answer: 'Standard department requests are typically processed within 24 to 48 business hours by your designated supervisor or manager. System-level security clearances may require additional security review by IT Admins.'
+  },
+  {
+    id: 'faq-11',
+    category: 'Security',
+    question: 'How does Multi-Factor Authentication (MFA) work and how do I reset it?',
+    answer: 'MFA is enforced across the IdentityFlow gateway to satisfy modern zero-trust policies. If you are locked out or need to register a new authenticator token, submit an "MFA Lockout / Reset" support ticket in the Support tab. An IT Admin will verify your identity and generate a reset link.'
+  },
+  {
+    id: 'faq-12',
+    category: 'Account',
+    question: 'What do the different workspace roles mean (User, Manager, IT Support)?',
+    answer: 'Your workspace role determines your access: "User" is the standard level for submitting/tracking personal requests. "Manager" enables supervisors to review and approve departmental access and bulk workflows. "IT Support" and "IT Admin" possess system-wide view, user administration, and security control privileges.'
+  },
+  {
+    id: 'faq-13',
+    category: 'Security',
+    question: 'What are the "Session Parameters" displayed on the sidebar?',
+    answer: 'Session parameters display your active identity governance state, including your connection security level, MFA enforcement compliance, and Cloud Run host tunnel architecture. This ensures full auditing compliance for corporate data access.'
   }
 ];
 
@@ -549,22 +579,46 @@ export default function FAQView() {
               {!isGenerating && !chatError && (
                 <div className="px-4 py-2 bg-gray-50/50 dark:bg-gray-950/30 border-t border-gray-100 dark:border-gray-800/60 overflow-x-auto whitespace-nowrap scrollbar-none flex gap-2">
                   <button
+                    type="button"
                     onClick={() => handleSendMessage('How do I submit an access request?')}
-                    className="px-2.5 py-1 bg-white dark:bg-gray-800 hover:bg-gray-100 dark:hover:bg-gray-750 border border-gray-150 dark:border-gray-700 text-[10px] font-bold text-gray-600 dark:text-gray-300 rounded-lg shrink-0 transition-colors"
+                    className="px-2.5 py-1 bg-white dark:bg-gray-800 hover:bg-gray-100 dark:hover:bg-gray-750 border border-gray-150 dark:border-gray-700 text-[10px] font-bold text-gray-600 dark:text-gray-300 rounded-lg shrink-0 transition-colors cursor-pointer"
                   >
                     Submit request?
                   </button>
                   <button
-                    onClick={() => handleSendMessage('Why was my request rejected?')}
-                    className="px-2.5 py-1 bg-white dark:bg-gray-800 hover:bg-gray-100 dark:hover:bg-gray-750 border border-gray-150 dark:border-gray-700 text-[10px] font-bold text-gray-600 dark:text-gray-300 rounded-lg shrink-0 transition-colors"
+                    type="button"
+                    onClick={() => handleSendMessage('How do I request urgent or expedited review for my request?')}
+                    className="px-2.5 py-1 bg-white dark:bg-gray-800 hover:bg-gray-100 dark:hover:bg-gray-750 border border-gray-150 dark:border-gray-700 text-[10px] font-bold text-gray-600 dark:text-gray-300 rounded-lg shrink-0 transition-colors cursor-pointer"
                   >
-                    Why rejected?
+                    Urgent request?
                   </button>
                   <button
-                    onClick={() => handleSendMessage('How do I change my password?')}
-                    className="px-2.5 py-1 bg-white dark:bg-gray-800 hover:bg-gray-100 dark:hover:bg-gray-750 border border-gray-150 dark:border-gray-700 text-[10px] font-bold text-gray-600 dark:text-gray-300 rounded-lg shrink-0 transition-colors"
+                    type="button"
+                    onClick={() => handleSendMessage('How long do access request approvals typically take?')}
+                    className="px-2.5 py-1 bg-white dark:bg-gray-800 hover:bg-gray-100 dark:hover:bg-gray-750 border border-gray-150 dark:border-gray-700 text-[10px] font-bold text-gray-600 dark:text-gray-300 rounded-lg shrink-0 transition-colors cursor-pointer"
                   >
-                    Change password?
+                    How long for approval?
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => handleSendMessage('How does Multi-Factor Authentication (MFA) work and how do I reset it?')}
+                    className="px-2.5 py-1 bg-white dark:bg-gray-800 hover:bg-gray-100 dark:hover:bg-gray-750 border border-gray-150 dark:border-gray-700 text-[10px] font-bold text-gray-600 dark:text-gray-300 rounded-lg shrink-0 transition-colors cursor-pointer"
+                  >
+                    Reset my MFA?
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => handleSendMessage('What do the different workspace roles mean (User, Manager, IT Support)?')}
+                    className="px-2.5 py-1 bg-white dark:bg-gray-800 hover:bg-gray-100 dark:hover:bg-gray-750 border border-gray-150 dark:border-gray-700 text-[10px] font-bold text-gray-600 dark:text-gray-300 rounded-lg shrink-0 transition-colors cursor-pointer"
+                  >
+                    What are roles?
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => handleSendMessage('Why was my request rejected?')}
+                    className="px-2.5 py-1 bg-white dark:bg-gray-800 hover:bg-gray-100 dark:hover:bg-gray-750 border border-gray-150 dark:border-gray-700 text-[10px] font-bold text-gray-600 dark:text-gray-300 rounded-lg shrink-0 transition-colors cursor-pointer"
+                  >
+                    Why rejected?
                   </button>
                 </div>
               )}

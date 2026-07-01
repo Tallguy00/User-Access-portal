@@ -226,14 +226,14 @@ export default function UserManagement({
 
         {/* Real Table */}
         <div className="overflow-x-auto">
-          <table className="w-full text-left text-xs divide-y divide-gray-150 dark:divide-gray-800 select-none">
+          <table className="table-standard divide-y divide-gray-150 dark:divide-gray-800 select-none">
             <thead>
-              <tr className="bg-gray-50/50 dark:bg-gray-900/50 text-gray-400 font-bold uppercase tracking-wider">
-                <th className="p-4 pl-6">Profile Owner</th>
-                <th className="p-4">Department & Info</th>
-                <th className="p-4">Assigned security role</th>
-                <th className="p-4">Status & MFA</th>
-                <th className="p-4 pr-6 text-right">Actions Queue</th>
+              <tr className="table-header-row text-gray-400 font-bold uppercase tracking-wider">
+                <th className="th-standard pl-6">Profile Owner</th>
+                <th className="th-standard">Department & Info</th>
+                <th className="th-standard">Assigned security role</th>
+                <th className="th-standard">Status & MFA</th>
+                <th className="th-standard pr-6 text-right">Actions Queue</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-gray-100 dark:divide-gray-850">
@@ -243,7 +243,7 @@ export default function UserManagement({
                   <tr key={u.id} className="hover:bg-gray-50/40 dark:hover:bg-gray-800/20 transition-all">
                     
                     {/* User */}
-                    <td className="p-4 pl-6">
+                    <td className="td-standard pl-6">
                       <div className="flex items-center gap-2.5">
                         <div className="w-8 h-8 rounded-full bg-slate-100 dark:bg-slate-800 flex items-center justify-center font-bold text-slate-800 dark:text-slate-200">
                           {u.fullName.split(' ').map(n=>n[0]).join('')}
@@ -259,7 +259,7 @@ export default function UserManagement({
                     </td>
 
                     {/* Department */}
-                    <td className="p-4">
+                    <td className="td-standard">
                       <div className="flex items-center gap-1.5 text-gray-700 dark:text-gray-300 font-medium">
                         <Building className="w-3.5 h-3.5 text-gray-400 shrink-0" />
                         <span className="font-bold">{uDept}</span>
@@ -270,7 +270,7 @@ export default function UserManagement({
                     </td>
 
                     {/* Role assignment */}
-                    <td className="p-4">
+                    <td className="td-standard">
                       {currentUserRole === 'Super Admin' ? (
                         <select
                           value={u.role}
@@ -290,7 +290,7 @@ export default function UserManagement({
                     </td>
 
                     {/* Status & MFA status */}
-                    <td className="p-4">
+                    <td className="td-standard">
                       <div className="flex items-center gap-3">
                         <button
                           type="button"
@@ -321,7 +321,7 @@ export default function UserManagement({
                     </td>
 
                     {/* Password reset trigger */}
-                    <td className="p-4 pr-6 text-right">
+                    <td className="td-standard pr-6 text-right">
                       <button
                         type="button"
                         onClick={() => onResetPassword(u.email)}
