@@ -190,7 +190,7 @@ async function startServer() {
     res.json({ status: "ok" });
   });
 
-  app.post("/api/ask-ai", async (req, res) => {
+  app.post(["/api/ask", "/api/ask-ai"], async (req, res) => {
     const { question, history } = req.body;
     if (!question) {
       return res.status(400).json({ error: "Question is required." });

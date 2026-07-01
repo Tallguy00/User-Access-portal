@@ -196,7 +196,7 @@ export default function FAQView() {
           text: m.text
         }));
 
-      const response = await fetch('/api/ask-ai', {
+      const response = await fetch('/api/ask', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json'
