@@ -27,14 +27,18 @@ import {
   Server,
   Fingerprint,
   Layers,
-  HeartHandshake
+  HeartHandshake,
+  Sun,
+  Moon
 } from 'lucide-react';
 
 interface LandingPageProps {
   onNavigate: (page: 'landing' | 'login' | 'register' | 'forgot' | 'reset' | 'dashboard') => void;
+  theme: 'light' | 'dark';
+  onToggleTheme: () => void;
 }
 
-export default function LandingPage({ onNavigate }: LandingPageProps) {
+export default function LandingPage({ onNavigate, theme, onToggleTheme }: LandingPageProps) {
   // Mobile navigation state
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   
@@ -263,6 +267,19 @@ export default function LandingPage({ onNavigate }: LandingPageProps) {
 
             {/* Access Buttons */}
             <div className="hidden md:flex items-center gap-3">
+              <button
+                id="btn-landing-theme-toggle"
+                type="button"
+                onClick={onToggleTheme}
+                className="p-2 hover:bg-slate-100 dark:hover:bg-slate-900 text-slate-500 hover:text-slate-700 dark:hover:text-slate-350 rounded-xl transition-all flex items-center justify-center cursor-pointer"
+                title={theme === 'dark' ? 'Switch to Light Mode' : 'Switch to Dark Mode'}
+              >
+                {theme === 'dark' ? (
+                  <Sun className="w-5 h-5 text-amber-400" />
+                ) : (
+                  <Moon className="w-5 h-5 text-indigo-600" />
+                )}
+              </button>
               <button 
                 onClick={() => onNavigate('login')}
                 className="text-xs font-bold text-slate-700 dark:text-slate-350 hover:text-indigo-600 dark:hover:text-indigo-400 px-3.5 py-2 rounded-lg transition-colors cursor-pointer bg-transparent border-none"
@@ -279,8 +296,21 @@ export default function LandingPage({ onNavigate }: LandingPageProps) {
               </button>
             </div>
 
-            {/* Mobile Hamburger Button */}
-            <div className="flex md:hidden items-center">
+            {/* Mobile Actions: Theme Toggle & Hamburger */}
+            <div className="flex md:hidden items-center gap-2">
+              <button
+                id="btn-mobile-landing-theme-toggle"
+                type="button"
+                onClick={onToggleTheme}
+                className="p-2 hover:bg-slate-100 dark:hover:bg-slate-900 text-slate-500 hover:text-slate-700 dark:hover:text-slate-350 rounded-xl transition-all flex items-center justify-center cursor-pointer"
+                title={theme === 'dark' ? 'Switch to Light Mode' : 'Switch to Dark Mode'}
+              >
+                {theme === 'dark' ? (
+                  <Sun className="w-5 h-5 text-amber-400" />
+                ) : (
+                  <Moon className="w-5 h-5 text-indigo-600" />
+                )}
+              </button>
               <button 
                 onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
                 className="p-2 text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-white cursor-pointer bg-transparent border-none"

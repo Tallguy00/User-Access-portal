@@ -40,7 +40,14 @@ import { ShieldCheck, Users, User, LayoutDashboard, FileBarChart, History, Setti
 
 export default function App() {
   // Theme state
-  const [theme, setTheme] = useState<'light' | 'dark'>('light');
+  const [theme, setTheme] = useState<'light' | 'dark'>(() => {
+    const saved = localStorage.getItem('ar_theme');
+    if (saved === 'dark' || saved === 'light') return saved;
+    if (typeof window !== 'undefined' && window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches) {
+      return 'dark';
+    }
+    return 'light';
+  });
   const [globalSearchTerm, setGlobalSearchTerm] = useState('');
 
   // Current Auth states
@@ -1855,6 +1862,7 @@ export default function App() {
             onSelectRequest={setSelectedRequest}
             searchTerm={globalSearchTerm}
             onSearchChange={setGlobalSearchTerm}
+            theme={theme}
           />
         );
       default:
@@ -1882,9 +1890,9 @@ export default function App() {
     return (
       <div className={`${theme} min-h-screen bg-white dark:bg-gray-950 font-sans transition-colors duration-200`}>
         {currentPage === 'landing' ? (
-          <LandingPage onNavigate={setCurrentPage} />
+          <LandingPage onNavigate={setCurrentPage} theme={theme} onToggleTheme={() => setTheme(prev => prev === 'light' ? 'dark' : 'light')} />
         ) : (
-          <AuthLayout currentPage={currentPage as any} onNavigate={setCurrentPage}>
+          <AuthLayout currentPage={currentPage as any} onNavigate={setCurrentPage} theme={theme} onToggleTheme={() => setTheme(prev => prev === 'light' ? 'dark' : 'light')}>
             {currentPage === 'login' && <LoginScreen onSuccess={handleLoginSuccess} onNavigate={setCurrentPage} profiles={profiles} />}
             {currentPage === 'register' && <RegisterScreen onSuccess={handleRegisterSuccess} onNavigate={setCurrentPage} departments={departments} profiles={profiles} />}
             {currentPage === 'forgot' && <ForgotPasswordScreen onNavigate={setCurrentPage} />}
@@ -1916,6 +1924,8 @@ export default function App() {
         setGlobalSearchTerm={setGlobalSearchTerm}
         onOpenProfile={() => setIsProfileOpen(true)}
         onSelectProfileTab={() => setActiveTab('profile')}
+        theme={theme}
+        onToggleTheme={() => setTheme(prev => prev === 'light' ? 'dark' : 'light')}
       />
 
       <div className="flex flex-col lg:flex-row min-h-[calc(100vh-5rem)] relative z-10">
@@ -1932,7 +1942,7 @@ export default function App() {
               <button
                 id="btn-nav-dashboard"
                 onClick={() => setActiveTab('dashboard')}
-                className={`w-full flex items-center gap-3 px-4 py-3 text-xs font-semibold transition-all rounded-xl border-none cursor-pointer relative ${
+                className={`w-full flex items-center gap-3 px-4 py-3 text-xs font-semibold transition-all rounded-xl border-none cursor-pointer relative focus:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500/50 focus-visible:ring-offset-2 dark:focus-visible:ring-offset-slate-950 ${
                   activeTab === 'dashboard'
                     ? 'text-white bg-indigo-600 shadow-md shadow-indigo-500/20 pl-6'
                     : 'text-slate-500 dark:text-slate-400 hover:text-indigo-600 dark:hover:text-indigo-400 hover:bg-slate-100/60 dark:hover:bg-slate-900/60'

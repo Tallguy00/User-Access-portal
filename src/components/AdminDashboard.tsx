@@ -13,6 +13,7 @@ interface AdminDashboardProps {
   onSelectRequest: (request: AccessRequest) => void;
   searchTerm?: string;
   onSearchChange?: (val: string) => void;
+  theme?: 'light' | 'dark';
 }
 
 export default function AdminDashboard({ 
@@ -21,7 +22,8 @@ export default function AdminDashboard({
   departments: rawDepartments,
   onSelectRequest,
   searchTerm: externalSearchTerm,
-  onSearchChange: externalOnSearchChange
+  onSearchChange: externalOnSearchChange,
+  theme = 'light'
 }: AdminDashboardProps) {
   const requests = Array.isArray(rawRequests) ? rawRequests.filter(Boolean) : [];
   const profiles = Array.isArray(rawProfiles) ? rawProfiles.filter(Boolean) : [];
@@ -30,6 +32,11 @@ export default function AdminDashboard({
   const [localSearchTerm, setLocalSearchTerm] = useState('');
   const [sortBy, setSortBy] = useState<string>('date-desc');
   const [activeQueueTab, setActiveQueueTab] = useState<'approved' | 'all'>('approved');
+
+  const isDark = theme === 'dark';
+  const gridStrokeColor = isDark ? '#334155' : '#e2e8f0';
+  const tickColor = isDark ? '#94a3b8' : '#9ca3af';
+  const yAxisLabelColor = isDark ? '#cbd5e1' : '#4b5563';
 
   const searchTerm = externalSearchTerm !== undefined ? externalSearchTerm : localSearchTerm;
   const setSearchTerm = externalOnSearchChange !== undefined ? externalOnSearchChange : setLocalSearchTerm;
@@ -365,16 +372,16 @@ export default function AdminDashboard({
               data={chartData}
               margin={{ top: 10, right: 10, left: -25, bottom: 0 }}
             >
-              <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#e2e8f0" className="dark:stroke-gray-800/50" />
+              <CartesianGrid strokeDasharray="3 3" vertical={false} stroke={gridStrokeColor} />
               <XAxis 
                 dataKey="date" 
-                tick={{ fill: '#9ca3af', fontSize: 10, fontFamily: 'monospace' }}
+                tick={{ fill: tickColor, fontSize: 10, fontFamily: 'monospace' }}
                 axisLine={false}
                 tickLine={false}
                 dy={10}
               />
               <YAxis 
-                tick={{ fill: '#9ca3af', fontSize: 10, fontFamily: 'monospace' }} 
+                tick={{ fill: tickColor, fontSize: 10, fontFamily: 'monospace' }} 
                 axisLine={false}
                 tickLine={false}
                 allowDecimals={false}
@@ -434,9 +441,9 @@ export default function AdminDashboard({
                   data={departmentData}
                   margin={{ top: 10, right: 20, left: 10, bottom: 5 }}
                 >
-                  <CartesianGrid strokeDasharray="3 3" horizontal={false} stroke="#e2e8f0" className="dark:stroke-gray-800/50" />
-                  <XAxis type="number" tick={{ fill: '#9ca3af', fontSize: 10, fontFamily: 'monospace' }} axisLine={false} tickLine={false} allowDecimals={false} />
-                  <YAxis type="category" dataKey="name" tick={{ fill: '#4b5563', fontSize: 10 }} axisLine={false} tickLine={false} width={110} />
+                  <CartesianGrid strokeDasharray="3 3" horizontal={false} stroke={gridStrokeColor} />
+                  <XAxis type="number" tick={{ fill: tickColor, fontSize: 10, fontFamily: 'monospace' }} axisLine={false} tickLine={false} allowDecimals={false} />
+                  <YAxis type="category" dataKey="name" tick={{ fill: yAxisLabelColor, fontSize: 10 }} axisLine={false} tickLine={false} width={110} />
                   <Tooltip
                     content={({ active, payload }: any) => {
                       if (active && payload && payload.length) {

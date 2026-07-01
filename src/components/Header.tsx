@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { UserProfile, UserRole, AppNotification } from '../types';
-import { Bell, Key, LogOut, ShieldAlert, CheckSquare, Sparkles, User, RefreshCw, Layers, Search, Settings, X, Shield } from 'lucide-react';
+import { Bell, Key, LogOut, ShieldAlert, CheckSquare, Sparkles, User, RefreshCw, Layers, Search, Settings, X, Shield, Sun, Moon } from 'lucide-react';
 import SearchInput from './SearchInput';
 
 interface HeaderProps {
@@ -14,6 +14,8 @@ interface HeaderProps {
   setGlobalSearchTerm?: (val: string) => void;
   onOpenProfile?: () => void;
   onSelectProfileTab?: () => void;
+  theme: 'light' | 'dark';
+  onToggleTheme: () => void;
 }
 
 export default function Header({
@@ -26,7 +28,9 @@ export default function Header({
   globalSearchTerm = '',
   setGlobalSearchTerm,
   onOpenProfile,
-  onSelectProfileTab
+  onSelectProfileTab,
+  theme,
+  onToggleTheme
 }: HeaderProps) {
   const notifications = Array.isArray(rawNotifications) ? rawNotifications.filter(Boolean) : [];
   const [showNotifications, setShowNotifications] = useState(false);
@@ -103,6 +107,21 @@ export default function Header({
             <div className="lg:hidden p-1 px-2.5 border border-gray-250 dark:border-gray-800 text-gray-650 dark:text-gray-400 rounded-lg text-xs font-black uppercase tracking-wider bg-gray-50/50 dark:bg-gray-850/50 select-none">
               {currentUser.role}
             </div>
+
+            {/* Theme Toggle Button */}
+            <button
+              id="btn-header-theme-toggle"
+              type="button"
+              onClick={onToggleTheme}
+              className="p-2 hover:bg-gray-50 dark:hover:bg-gray-800 text-gray-500 hover:text-gray-700 dark:hover:text-gray-200 rounded-xl transition-all flex items-center justify-center cursor-pointer"
+              title={theme === 'dark' ? 'Switch to Light Mode' : 'Switch to Dark Mode'}
+            >
+              {theme === 'dark' ? (
+                <Sun className="w-5 h-5 text-amber-400" />
+              ) : (
+                <Moon className="w-5 h-5 text-indigo-600" />
+              )}
+            </button>
 
             {/* Notifications panel */}
             <div className="relative">

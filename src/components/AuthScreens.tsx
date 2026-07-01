@@ -4,7 +4,7 @@ import { UserRole, Department, UserProfile } from '../types';
 import { 
   AlertCircle, Lock, Mail, User, ShieldCheck, ArrowRight, 
   Sparkles, Building, KeyRound, Info, Eye, EyeOff, 
-  Check, Shield, Timer, RefreshCw, Menu, X
+  Check, Shield, Timer, RefreshCw, Menu, X, Sun, Moon
 } from 'lucide-react';
 
 // Validation helper for E.164 format (starts with +, followed by 7 to 15 digits)
@@ -16,11 +16,15 @@ export function validateE164(phone: string): boolean {
 export function AuthLayout({ 
   children, 
   currentPage, 
-  onNavigate 
+  onNavigate,
+  theme,
+  onToggleTheme
 }: { 
   children: React.ReactNode; 
   currentPage: 'landing' | 'login' | 'register' | 'forgot' | 'reset' | 'dashboard'; 
-  onNavigate: (page: 'landing' | 'login' | 'register' | 'forgot' | 'reset' | 'dashboard') => void 
+  onNavigate: (page: 'landing' | 'login' | 'register' | 'forgot' | 'reset' | 'dashboard') => void;
+  theme: 'light' | 'dark';
+  onToggleTheme: () => void;
 }) {
   const isLogin = currentPage === 'login';
   const isRegister = currentPage === 'register';
@@ -64,6 +68,19 @@ export function AuthLayout({
 
             {/* Access Buttons */}
             <div className="hidden md:flex items-center gap-3">
+              <button
+                id="btn-auth-theme-toggle"
+                type="button"
+                onClick={onToggleTheme}
+                className="p-2 hover:bg-slate-100 dark:hover:bg-slate-900 text-slate-500 hover:text-slate-700 dark:hover:text-slate-350 rounded-xl transition-all flex items-center justify-center cursor-pointer"
+                title={theme === 'dark' ? 'Switch to Light Mode' : 'Switch to Dark Mode'}
+              >
+                {theme === 'dark' ? (
+                  <Sun className="w-5 h-5 text-amber-400" />
+                ) : (
+                  <Moon className="w-5 h-5 text-indigo-600" />
+                )}
+              </button>
               <button 
                 onClick={() => onNavigate('login')}
                 className={`text-xs font-bold px-3.5 py-2 rounded-lg transition-colors cursor-pointer bg-transparent border-none ${isLogin ? 'text-indigo-600 dark:text-indigo-400' : 'text-slate-700 dark:text-slate-350 hover:text-indigo-600 dark:hover:text-indigo-400'}`}
@@ -80,8 +97,21 @@ export function AuthLayout({
               </button>
             </div>
 
-            {/* Mobile Hamburger Button */}
-            <div className="flex md:hidden items-center">
+            {/* Mobile Actions: Theme Toggle & Hamburger */}
+            <div className="flex md:hidden items-center gap-2">
+              <button
+                id="btn-mobile-auth-theme-toggle"
+                type="button"
+                onClick={onToggleTheme}
+                className="p-2 hover:bg-slate-100 dark:hover:bg-slate-900 text-slate-500 hover:text-slate-700 dark:hover:text-slate-350 rounded-xl transition-all flex items-center justify-center cursor-pointer"
+                title={theme === 'dark' ? 'Switch to Light Mode' : 'Switch to Dark Mode'}
+              >
+                {theme === 'dark' ? (
+                  <Sun className="w-5 h-5 text-amber-400" />
+                ) : (
+                  <Moon className="w-5 h-5 text-indigo-600" />
+                )}
+              </button>
               <button 
                 onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
                 className="p-2 text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-white cursor-pointer bg-transparent border-none"
